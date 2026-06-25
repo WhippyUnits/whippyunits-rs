@@ -131,6 +131,7 @@ pub mod arithmetic;
 pub mod arithmetic_quantity_types;
 pub mod default_declarators;
 pub mod dimension_traits;
+pub mod lossy_into;
 #[cfg(feature = "alloc")]
 #[doc(hidden)]
 pub mod print;
