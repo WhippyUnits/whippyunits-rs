@@ -63,6 +63,8 @@
 //! a brand (of the unit type `()`), so custom-branded quantities will not interoperate with default-declared
 //! quantities unless explicitly converted.
 
+use crate::lossy_into::LossyFrom;
+
 #[derive(PartialEq)]
 pub struct _2<const EXP: i16 = 0>;
 /// The base-3 scale exponent of a quantity.
@@ -407,6 +409,89 @@ impl<
             unsafe_value,
             _phantom: core::marker::PhantomData,
         }
+    }
+
+    /// Convert this quantity's underlying value to another numeric type using a
+    /// lossless conversion.
+    ///
+    /// This method preserves the quantity's scale, dimension, and brand while
+    /// converting its numeric representation.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn main() {
+    /// # use whippyunits::quantity;
+    /// // f32 -> f64
+    /// let distance = quantity!(1.0, m, f32);
+    /// _ = distance.lossless_into::<f64>();
+    ///
+    /// // u16 -> i32
+    /// let distance = quantity!(1, m, u16);
+    /// _ = distance.lossless_into::<i32>();
+    /// # }
+    /// ```
+    #[inline]
+    pub fn lossless_into<Dest: From<T>>(
+        self,
+    ) -> Quantity<
+        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+        Dimension<
+            _M<MASS_EXPONENT>,
+            _L<LENGTH_EXPONENT>,
+            _T<TIME_EXPONENT>,
+            _I<CURRENT_EXPONENT>,
+            _Θ<TEMPERATURE_EXPONENT>,
+            _N<AMOUNT_EXPONENT>,
+            _J<LUMINOSITY_EXPONENT>,
+            _A<ANGLE_EXPONENT>,
+        >,
+        Dest,
+        Brand,
+    > {
+        Quantity::new(Dest::from(self.unsafe_value))
+    }
+
+    /// Convert this quantity's underlying value to another floating-point type using
+    /// a potentially lossy conversion.
+    ///
+    /// This method preserves the quantity's scale, dimension, and brand while
+    /// converting its numeric representation.
+    /// Lossy conversions are only implemented between `f32` and `f64`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn main() {
+    /// # use whippyunits::quantity;
+    /// // f64 -> f32 (possible information loss)
+    /// let distance = quantity!(1.0, m);
+    /// _ = distance.lossy_into::<f32>();
+    ///
+    /// // f32 -> f64 (no information loss, same as lossless_into)
+    /// let distance = quantity!(1.0, m, f32);
+    /// _ = distance.lossy_into::<f64>();
+    /// # }
+    /// ```
+    #[inline]
+    pub fn lossy_into<Dest: LossyFrom<T>>(
+        self,
+    ) -> Quantity<
+        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+        Dimension<
+            _M<MASS_EXPONENT>,
+            _L<LENGTH_EXPONENT>,
+            _T<TIME_EXPONENT>,
+            _I<CURRENT_EXPONENT>,
+            _Θ<TEMPERATURE_EXPONENT>,
+            _N<AMOUNT_EXPONENT>,
+            _J<LUMINOSITY_EXPONENT>,
+            _A<ANGLE_EXPONENT>,
+        >,
+        Dest,
+        Brand,
+    > {
+        Quantity::new(Dest::lossy_from(self.unsafe_value))
     }
 
     /// Format this quantity in the specified unit
