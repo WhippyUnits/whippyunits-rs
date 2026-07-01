@@ -452,25 +452,34 @@ impl<
         Quantity::new(Dest::from(self.unsafe_value))
     }
 
-    /// Convert this quantity's underlying value to another floating-point type using
+    /// Convert this quantity's underlying value to another numeric type using
     /// a potentially lossy conversion.
     ///
     /// This method preserves the quantity's scale, dimension, and brand while
-    /// converting its numeric representation.
-    /// Lossy conversions are only implemented between `f32` and `f64`.
+    /// converting its numeric representation. Lossy conversions are implemented
+    /// between all primitive numeric types (`f32`, `f64`, `i8`–`i128`, `u8`–`u128`,
+    /// `isize`, `usize`).
     ///
     /// # Example
     ///
     /// ```rust
     /// # fn main() {
     /// # use whippyunits::quantity;
-    /// // f64 -> f32 (possible information loss)
+    /// // f64 -> f32 (possible precision loss)
     /// let distance = quantity!(1.0, m);
     /// _ = distance.lossy_into::<f32>();
     ///
     /// // f32 -> f64 (no information loss, same as lossless_into)
     /// let distance = quantity!(1.0, m, f32);
     /// _ = distance.lossy_into::<f64>();
+    ///
+    /// // integer -> float
+    /// let count = quantity!(42, m, i32);
+    /// _ = count.lossy_into::<f64>();
+    ///
+    /// // float -> integer (truncates toward zero)
+    /// let distance = quantity!(3.7, m);
+    /// _ = distance.lossy_into::<i32>();
     /// # }
     /// ```
     #[inline]

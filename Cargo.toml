@@ -16,7 +16,7 @@ repository = "https://github.com/WhippyUnits/whippyunits-rs"
 
 [package]
 name = "whippyunits"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -89,6 +89,10 @@ path = "examples/operations/comparison.rs"
 [[example]]
 name = "value_access"
 path = "examples/operations/value_access.rs"
+
+[[example]]
+name = "type_conversions"
+path = "examples/operations/type_conversions.rs"
 
 [[example]]
 name = "storage_types"
