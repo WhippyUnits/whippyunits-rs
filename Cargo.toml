@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.4"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -16,7 +16,7 @@ repository = "https://github.com/WhippyUnits/whippyunits-rs"
 
 [package]
 name = "whippyunits"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -31,7 +31,7 @@ quote = { version = "1.0", optional = true }
 proc-macro2 = { version = "1.0", optional = true }
 syn = { version = "2.0", features = ["full"], optional = true }
 libm = "0.2"
-whippyunits-proc-macros = { path = "proc-macros", version = "0.2.1" }
+whippyunits-proc-macros = { path = "proc-macros", version = "0.2.4" }
 whippyunits-core = { path = "whippyunits-core", version = "0.2.1" }
 num-traits = "0.2"
 culit = "0.6.0"

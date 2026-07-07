@@ -1,6 +1,7 @@
 //! Test the expanded value! macro with different backing types
 
 use whippyunits::*;
+use whippyunits_core::Unit;
 
 #[test]
 fn test_value_macro_with_different_types() {
@@ -156,4 +157,64 @@ fn test_value_macro_with_time_units() {
     let time_f32 = quantity!(60.0f32, s, f32);
     let val_f32_min: f32 = value!(time_f32, min, f32);
     assert_eq!(val_f32_min, 1.0f32);
+}
+
+#[test]
+fn test_value_macro_nonstorage_units_respect_storage_type() {
+    // Nonstorage units (conversion_factor != 1.0) with explicit storage types.
+    // Regression: the declarator fast path previously ignored storage_type,
+    // always producing f64 quantities regardless of what was requested.
+
+    let cf_inch = Unit::INCH.conversion_factor;
+    let cf_foot = Unit::FOOT.conversion_factor;
+    let cf_pound = Unit::POUND.conversion_factor;
+
+    // Imperial length — inch stored as cm (scale 10^-2)
+    let distance_f32 = quantity!(1.0f32, inch, f32);
+    let val_f32_cm: f32 = value!(distance_f32, cm, f32);
+    assert!((val_f32_cm - cf_inch as f32).abs() < 1e-5);
+
+    let val_f32_inch: f32 = value!(distance_f32, inch, f32);
+    assert!((val_f32_inch - 1.0f32).abs() < 1e-5);
+
+    // Imperial length — foot stored as dm (scale 10^-1)
+    let distance_ft_f32 = quantity!(1.0f32, ft, f32);
+    let val_ft_dm: f32 = value!(distance_ft_f32, dm, f32);
+    assert!((val_ft_dm - cf_foot as f32).abs() < 1e-5);
+
+    let val_ft_roundtrip: f32 = value!(distance_ft_f32, ft, f32);
+    assert!((val_ft_roundtrip - 1.0f32).abs() < 1e-5);
+
+    // Imperial mass — pound stored as kg (scale identity)
+    let mass_f32 = quantity!(1.0f32, lb, f32);
+    let val_lb_kg: f32 = value!(mass_f32, kg, f32);
+    assert!((val_lb_kg - cf_pound as f32).abs() < 1e-5);
+
+    let val_lb_roundtrip: f32 = value!(mass_f32, lb, f32);
+    assert!((val_lb_roundtrip - 1.0f32).abs() < 1e-4);
+}
+
+#[test]
+fn test_value_macro_affine_units_respect_storage_type() {
+    // Affine units (affine_offset != 0.0) with explicit storage types.
+
+    let af_celsius = Unit::CELSIUS.affine_offset;
+
+    // Celsius (identity scale, offset 273.15): full roundtrip works
+    let temp_f32 = quantity!(100.0f32, celsius, f32);
+    let val_k: f32 = value!(temp_f32, K, f32);
+    assert!((val_k - (100.0 + af_celsius) as f32).abs() < 1e-2);
+
+    let val_c_roundtrip: f32 = value!(temp_f32, celsius, f32);
+    assert!((val_c_roundtrip - 100.0f32).abs() < 1e-2);
+
+    // Fahrenheit (non-identity scale 5/9, offset 459.7, stored as Rankine)
+    let af_fahrenheit = Unit::FAHRENHEIT.affine_offset;
+
+    let temp_f_f32 = quantity!(32.0f32, fahrenheit, f32);
+    let val_rankine: f32 = value!(temp_f_f32, degR, f32);
+    assert!((val_rankine - (32.0 + af_fahrenheit) as f32).abs() < 1e-2);
+
+    let val_f_roundtrip: f32 = value!(temp_f_f32, fahrenheit, f32);
+    assert!((val_f_roundtrip - 32.0f32).abs() < 1e-2);
 }

@@ -135,27 +135,27 @@ impl ValueMacroInput {
             let unit_info = get_unit_info(&unit_name).unwrap();
             let affine_offset = unit_info.affine_offset;
 
-            // Find the storage unit (same scale, no offset, conversion_factor == 1.0)
-            let storage_unit_symbol = if let Some((unit, dimension)) =
-                Dimension::find_unit_by_symbol(&unit_name)
-            {
-                // Find a storage unit with the same scale
-                if let Some(storage_unit) = dimension.units.iter().find(|u| {
-                    u.scale == unit.scale && u.conversion_factor == 1.0 && u.affine_offset == 0.0
-                }) {
-                    storage_unit.symbols[0]
-                } else {
-                    // Fallback: use the first symbol of the first storage unit in the dimension
-                    dimension
-                        .units
-                        .iter()
-                        .find(|u| u.conversion_factor == 1.0 && u.affine_offset == 0.0)
-                        .map(|u| u.symbols[0])
-                        .unwrap_or("K") // Fallback to K for temperature
-                }
-            } else {
-                "K" // Fallback
-            };
+            let (_unit_ref, dimension) = Dimension::find_unit(&unit_name)
+                .unwrap_or_else(|| {
+                    panic!("value!: unit '{}' not found in any dimension", unit_name)
+                });
+
+            // Find a storage unit at the same scale (no offset, no conversion factor)
+            let storage_unit = dimension
+                .units
+                .iter()
+                .find(|u| {
+                    u.scale == unit_info.scale
+                        && u.conversion_factor == 1.0
+                        && u.affine_offset == 0.0
+                })
+                .unwrap_or_else(|| {
+                    panic!(
+                        "value!: no storage unit at scale {:?} in dimension '{}'",
+                        unit_info.scale, dimension.name
+                    )
+                });
+            let storage_unit_symbol = storage_unit.symbols[0];
 
             let storage_unit_ident = Ident::new(storage_unit_symbol, unit.name.span());
 

@@ -199,15 +199,7 @@ fn lookup_unit_literal_direct(
 pub fn get_storage_unit_type_for_unit(unit_name: &str) -> Option<TokenStream> {
     use whippyunits_core::Dimension;
 
-    // Find the unit and its dimension
-    let (unit, dimension) =
-        if let Some((unit, dimension)) = Dimension::find_unit_by_symbol(unit_name) {
-            (unit, dimension)
-        } else if let Some((unit, dimension)) = Dimension::find_unit_by_name(unit_name) {
-            (unit, dimension)
-        } else {
-            return None;
-        };
+    let (unit, dimension) = Dimension::find_unit(unit_name)?;
 
     // Check if this is an affine or nonstorage unit
     let is_nonstorage = unit.conversion_factor != 1.0;
@@ -218,13 +210,13 @@ pub fn get_storage_unit_type_for_unit(unit_name: &str) -> Option<TokenStream> {
         return None;
     }
 
-    // Find the storage unit (same scale, conversion_factor == 1.0, affine_offset == 0.0)
     let storage_unit = dimension
         .units
         .iter()
         .find(|u| u.scale == unit.scale && u.conversion_factor == 1.0 && u.affine_offset == 0.0)
         .or_else(|| {
-            // Fallback: find any storage unit in the dimension
+            // Scale-matched unit may not exist in the dimension (e.g. centimeter
+            // is prefix-generated, not listed). Fall back to any storage unit.
             dimension
                 .units
                 .iter()
@@ -276,14 +268,7 @@ pub fn get_unit_documentation_text(unit_name: &str) -> String {
 /// Get unit documentation information from whippyunits-core data
 pub fn get_unit_doc_info(unit_name: &str) -> Option<String> {
     // First check for exact unit match (prioritize exact matches over prefix matches)
-    if let Some((unit, _dimension)) = Dimension::find_unit_by_symbol(unit_name) {
-        // Use the first symbol from unit.symbols as the abbreviation
-        let symbol = unit.symbols.first().unwrap_or(&unit_name);
-        return Some(format!("{} ({})", unit.name, symbol));
-    }
-
-    if let Some((unit, _dimension)) = Dimension::find_unit_by_name(unit_name) {
-        // Use the first symbol from unit.symbols as the abbreviation
+    if let Some((unit, _dimension)) = Dimension::find_unit(unit_name) {
         let symbol = unit.symbols.first().unwrap_or(&unit_name);
         return Some(format!("{} ({})", unit.name, symbol));
     }
@@ -294,12 +279,7 @@ pub fn get_unit_doc_info(unit_name: &str) -> Option<String> {
         if let Some(prefix_info) = SiPrefix::from_symbol(&prefix_symbol) {
             // PARSE: Get the abstract representation (prefix + base unit)
             let (base_unit_name, base_unit_symbol) =
-                if let Some((base_unit, _)) = Dimension::find_unit_by_symbol(&_base_symbol) {
-                    (
-                        base_unit.name,
-                        base_unit.symbols.first().unwrap_or(&base_unit.name),
-                    )
-                } else if let Some((base_unit, _)) = Dimension::find_unit_by_name(&_base_symbol) {
+                if let Some((base_unit, _)) = Dimension::find_unit(&_base_symbol) {
                     (
                         base_unit.name,
                         base_unit.symbols.first().unwrap_or(&base_unit.name),
