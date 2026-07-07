@@ -500,13 +500,8 @@ pub fn get_unit_info(unit_name: &str) -> Option<&'static Unit> {
         return None; // Dimensionless units don't have a corresponding Unit
     }
 
-    // First check if this is a unit literal (like min, h, hr, d, g, m, s, etc.)
-    // This must come before prefix checking to avoid false positives
-    if let Some((unit, _dimension)) = Dimension::find_unit_by_symbol(unit_name) {
-        return Some(unit);
-    }
-
-    if let Some((unit, _dimension)) = Dimension::find_unit_by_name(unit_name) {
+    // Check for exact unit match (symbol first, then name) before prefix checking
+    if let Some((unit, _dimension)) = Dimension::find_unit(unit_name) {
         return Some(unit);
     }
 

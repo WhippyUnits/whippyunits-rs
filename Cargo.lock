@@ -787,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "whippyunits"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "culit",
  "libm",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "whippyunits-core"
-version = "0.2.1"
+version = "0.2.4"
 dependencies = [
  "proc-macro2",
  "syn",
@@ -845,7 +845,7 @@ dependencies = [
 
 [[package]]
 name = "whippyunits-proc-macros"
-version = "0.2.1"
+version = "0.2.4"
 dependencies = [
  "proc-macro2",
  "quote",

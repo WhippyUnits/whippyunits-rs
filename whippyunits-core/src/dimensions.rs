@@ -29,7 +29,14 @@ impl Dimension {
             .find(|dim| dim.symbol == name_or_symbol || dim.name == name_or_symbol)
     }
 
-    /// Find a unit by its symbol across all dimensions.
+    /// Find a unit by symbol or name across all dimensions.
+    /// Tries symbol match first (exact match on `Unit::symbols`), then falls
+    /// back to name match (`Unit::name`).
+    pub fn find_unit(identifier: &str) -> Option<(&'static Unit, &'static Self)> {
+        Self::find_unit_by_symbol(identifier).or_else(|| Self::find_unit_by_name(identifier))
+    }
+
+    /// Find a unit by its name across all dimensions.
     pub fn find_unit_by_name(name: &str) -> Option<(&'static Unit, &'static Self)> {
         Self::ALL.iter().find_map(|dimension| {
             dimension

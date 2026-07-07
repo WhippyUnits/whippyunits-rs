@@ -60,7 +60,10 @@ impl QuantityMacroInput {
                 let is_nonstorage = unit_info.conversion_factor != 1.0;
                 let is_affine = unit_info.affine_offset != 0.0;
 
-                if is_nonstorage || is_affine {
+                if (is_nonstorage || is_affine)
+                    && self.storage_type.is_none()
+                    && self.brand_type.is_none()
+                {
                     // Dispatch to appropriate declarator (handles conversion internally)
                     let expanded = self.expand_with_declarator(unit_info);
                     return quote! {

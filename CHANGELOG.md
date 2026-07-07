@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-07-07
+
+### Fixed
+
+- `quantity!` macro now respects explicit storage type and brand type for nonstorage and affine units (e.g. `quantity!(4.5, inch, f32)` previously produced an `f64` quantity)
+- `value!` macro affine path now resolves units by name as well as symbol, and panics at compile time instead of silently falling back to Kelvin when lookup fails
+
 ## [0.2.3] - 2026-07-01
 
 ### Added
