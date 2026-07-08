@@ -508,7 +508,7 @@ impl Unit<crate::dimension_exponents!([0, 0, 1, 0, 0, 0, 0, 0])> {
 impl Unit<crate::dimension_exponents!([0, 0, 0, 1, 0, 0, 0, 0])> {
     pub const AMPERE: Self = Self {
         name: "ampere",
-        symbols: &["A"],
+        symbols: &["A", "amp"],
         scale: ScaleExponents::IDENTITY,
         conversion_factor: IDENTITY,
         affine_offset: NONE,

@@ -1,0 +1,15 @@
+error: macro expansion ignores `;` and any tokens following
+ --> tests/compile_fail_stable/value_unknown_unit.rs:6:19
+  |
+6 |     let _x: f64 = value!(distance, xyz);
+  |                   ^^^^^^^^^^^^^^^^^^^^^ caused by the macro expansion here
+  |
+  = note: the usage of `value!` is likely invalid in expression context
+
+error: Unknown unit 'xyz'. No similar units found.
+ --> tests/compile_fail_stable/value_unknown_unit.rs:6:19
+  |
+6 |     let _x: f64 = value!(distance, xyz);
+  |                   ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `value` (in Nightly builds, run with -Z macro-backtrace for more info)

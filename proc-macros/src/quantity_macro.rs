@@ -5,7 +5,7 @@ use syn::token::Comma;
 use syn::{Expr, Type};
 use whippyunits_core::{calculate_unit_conversion_factors, get_unit_info, Dimension, UnitExpr};
 
-use crate::utils::shared_utils::generate_unit_documentation_for_expr;
+use crate::utils::shared_utils::{generate_unit_documentation_for_expr, validate_known_units};
 
 /// Input for the quantity macro
 pub struct QuantityMacroInput {
@@ -48,6 +48,10 @@ impl Parse for QuantityMacroInput {
 
 impl QuantityMacroInput {
     pub fn expand(self) -> TokenStream {
+        if let Some(error) = validate_known_units(&self.unit_expr) {
+            return error;
+        }
+
         // Generate documentation structs for unit identifiers
         // For quantity! macro, use storage type for affine/nonstorage units
         let doc_structs = generate_unit_documentation_for_expr(&self.unit_expr, true);

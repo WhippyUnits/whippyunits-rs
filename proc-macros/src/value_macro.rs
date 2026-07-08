@@ -7,7 +7,7 @@ use whippyunits_core::{
     calculate_unit_conversion_factors, get_unit_info, Dimension, EvaluationMode, UnitExpr,
 };
 
-use crate::utils::shared_utils::generate_unit_documentation_for_expr;
+use crate::utils::shared_utils::{generate_unit_documentation_for_expr, validate_known_units};
 
 /// Input for the value! macro
 /// Syntax: value!(quantity, unit_expr) or value!(quantity, unit_expr, type) or value!(quantity, unit_expr, type, brand)
@@ -49,6 +49,10 @@ impl Parse for ValueMacroInput {
 
 impl ValueMacroInput {
     pub fn expand(self) -> TokenStream {
+        if let Some(error) = validate_known_units(&self.unit_expr) {
+            return error;
+        }
+
         // Generate documentation structs for unit identifiers
         // For value! macro, use storage type for affine/nonstorage units (like quantity!)
         let doc_structs = generate_unit_documentation_for_expr(&self.unit_expr, true);
