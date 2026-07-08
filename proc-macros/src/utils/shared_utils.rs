@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 /// Shared utilities for proc macros
 use syn::Ident;
-use whippyunits_core::{Dimension, SiPrefix, UnitExpr};
+use whippyunits_core::{Dimension, SiPrefix, UnitExpr, get_unit_info};
 
 /// Check if a unit name can be parsed as a valid Rust identifier
 /// This filters out units with unicode characters or other invalid identifier characters
@@ -412,4 +412,46 @@ pub fn generate_unit_documentation_for_expr(
     quote! {
         #(#doc_structs)*
     }
+}
+
+/// Validate that all unit identifiers in the expression are recognized.
+/// Returns `Some(compile_error!(...))` if any identifier is unknown, `None` if all are valid.
+pub fn validate_known_units(unit_expr: &UnitExpr) -> Option<TokenStream> {
+    use crate::utils::unit_suggestions::find_similar_units;
+
+    let mut identifiers = Vec::new();
+    collect_identifiers_from_expr(unit_expr, &mut identifiers);
+
+    for ident in &identifiers {
+        let name = ident.to_string();
+
+        if name == "dimensionless" || name == "power_of_10" {
+            continue;
+        }
+
+        if get_unit_info(&name).is_some() {
+            continue;
+        }
+
+        let suggestions = find_similar_units(&name, 0.7);
+        let error_message = if suggestions.is_empty() {
+            format!("Unknown unit '{}'. No similar units found.", name)
+        } else {
+            let suggestion_list = suggestions
+                .iter()
+                .map(|(s, _)| format!("'{}'", s))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!(
+                "Unknown unit '{}'. Did you mean: {}?",
+                name, suggestion_list
+            )
+        };
+
+        return Some(quote! {
+            compile_error!(#error_message);
+        });
+    }
+
+    None
 }

@@ -1,0 +1,15 @@
+error: macro expansion ignores `;` and any tokens following
+ --> tests/compile_fail_cge/quantity_unknown_unit.rs:4:14
+  |
+4 |     let _x = quantity!(5.0, xyz);
+  |              ^^^^^^^^^^^^^^^^^^^ caused by the macro expansion here
+  |
+  = note: the usage of `quantity!` is likely invalid in expression context
+
+error: Unknown unit 'xyz'. No similar units found.
+ --> tests/compile_fail_cge/quantity_unknown_unit.rs:4:14
+  |
+4 |     let _x = quantity!(5.0, xyz);
+  |              ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `quantity` (in Nightly builds, run with -Z macro-backtrace for more info)

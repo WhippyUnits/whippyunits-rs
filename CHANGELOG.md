@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-07-08
+
+### Added
+
+- `amp` as a recognized abbreviation/symbol for ampere (like `s` for second or `hr` for hour)
+- Compile-time validation of unit names/symbols in `unit!`, `quantity!`, and `value!` macros — previously, unrecognized units were silently treated as dimensionless; they now produce a `compile_error!` with fuzzy "Did you mean?" suggestions
+
 ## [0.2.4] - 2026-07-07
 
 ### Fixed

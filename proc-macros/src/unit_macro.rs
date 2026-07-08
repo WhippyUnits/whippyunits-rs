@@ -5,7 +5,7 @@ use syn::token::Comma;
 use syn::Type;
 use whippyunits_core::UnitExpr;
 
-use crate::utils::shared_utils::generate_unit_documentation_for_expr;
+use crate::utils::shared_utils::{generate_unit_documentation_for_expr, validate_known_units};
 
 /// Input for the unit macro
 pub struct UnitMacroInput {
@@ -44,6 +44,10 @@ impl Parse for UnitMacroInput {
 
 impl UnitMacroInput {
     pub fn expand(self) -> TokenStream {
+        if let Some(error) = validate_known_units(&self.unit_expr) {
+            return error;
+        }
+
         // Validate that no nonstorage units are used (strict mode requirement)
         if let Some(error_msg) = self.unit_expr.validate_strict() {
             return quote! {
