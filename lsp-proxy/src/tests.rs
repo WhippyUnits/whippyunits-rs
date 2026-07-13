@@ -415,7 +415,7 @@ fn test_wholly_unresolved_type_formatting() {
 
     // Test the user's specific case: wholly unresolved type with all parameters as _
     // This matches the exact format from the IDE hover
-    let input = "Quantity<Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M<_>, _L<_>, _T<_>, _I<_>, _Θ<_>, _N<_>, _J<_>, _A<_>>";
+    let input = "Quantity<Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M<_>, _L<_>, _T<_>, _I<_>, _Θ<_>, _N<_>, _J<_>, _A<_>>>";
     let result = converter.format_types(input, &crate::DisplayConfig::default());
 
     // Should format as wholly unresolved type

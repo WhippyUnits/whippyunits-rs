@@ -18,7 +18,7 @@ use whippyunits::op_result;
 define_generic_dimension!(ProcessVariable, Length, L / T, Angle, A / T);
 
 // Define ControlOutput as a disjunction - voltage or current
-define_generic_dimension!(ControlOutput, M * L ^ 2 / T ^ 3 / I, I);
+define_generic_dimension!(ControlOutput, I, ElectricPotential);
 
 /// PID Controller type namespace that provides type aliases for derived types
 ///

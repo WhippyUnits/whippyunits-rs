@@ -1,5 +1,10 @@
 use core::ops::{Add, Mul, Neg, Sub};
 
+#[cfg(not(test))]
+use alloc::string::String;
+#[cfg(not(test))]
+use alloc::string::ToString;
+
 use crate::num::N;
 
 /// Axis of dimensions vector space.
@@ -298,6 +303,25 @@ impl DynDimensionExponents {
     pub const AMOUNT: Self = Amount::new().value_const();
     pub const LUMINOSITY: Self = Luminosity::new().value_const();
     pub const ANGLE: Self = Angle::new().value_const();
+
+    /// Format using dimension symbols with unicode superscript exponents (e.g. "ML²T⁻³I⁻¹").
+    pub fn to_symbol_string(&self) -> String {
+        let mut parts = String::new();
+        for (d, x) in DimensionBasis::ALL.iter().zip(self.0) {
+            if x == 0 {
+                continue;
+            }
+            parts.push_str(d.symbol());
+            if x != 1 {
+                parts.push_str(&crate::to_unicode_superscript(x, false));
+            }
+        }
+        if parts.is_empty() {
+            "1".to_string()
+        } else {
+            parts
+        }
+    }
 }
 
 impl Mul<i16> for DynDimensionExponents {

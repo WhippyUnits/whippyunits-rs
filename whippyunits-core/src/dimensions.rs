@@ -10,8 +10,8 @@ pub struct Dimension<ExponentsType: 'static = DynDimensionExponents> {
     /// Name of the dimension.
     pub name: &'static str,
 
-    /// Symbol for the dimension.
-    pub symbol: &'static str,
+    /// Symbol for the dimension (only for atomic/basis dimensions).
+    pub symbol: Option<&'static str>,
 
     /// Point in dimension space this dimension is for.
     pub exponents: ExponentsType,
@@ -23,10 +23,15 @@ pub struct Dimension<ExponentsType: 'static = DynDimensionExponents> {
 
 impl Dimension {
     /// Find a dimension by its name or symbol.
+    ///
+    /// Spaces in dimension names are ignored during comparison, so both
+    /// `"Electric Potential"` and `"ElectricPotential"` will match.
     pub fn find_dimension(name_or_symbol: &str) -> Option<&'static Self> {
-        Self::ALL
-            .iter()
-            .find(|dim| dim.symbol == name_or_symbol || dim.name == name_or_symbol)
+        Self::ALL.iter().find(|dim| {
+            dim.symbol == Some(name_or_symbol)
+                || dim.name == name_or_symbol
+                || dim.name.replace(' ', "") == name_or_symbol
+        })
     }
 
     /// Find a unit by symbol or name across all dimensions.
@@ -267,7 +272,10 @@ impl<
     pub const fn erase(&self) -> Dimension {
         Dimension {
             name: self.name,
-            symbol: self.symbol,
+            symbol: match self.symbol {
+                Some(s) => Some(s),
+                None => None,
+            },
             exponents: self.exponents.value_const(),
             units: self.units_erased,
             units_erased: self.units_erased,
@@ -377,7 +385,6 @@ impl Dimension<crate::dimension_exponents!([0, 0, 0, 0, 0, 0, 0, 1])> {
 impl Dimension<crate::dimension_exponents!([0, 2, 0, 0, 0, 0, 0, 0])> {
     pub const AREA: Self = __dim!(Self {
         name: "Area",
-        symbol: "L²",
         units: &[Unit::HECTARE, Unit::ACRE,],
     });
 }
@@ -385,7 +392,6 @@ impl Dimension<crate::dimension_exponents!([0, 2, 0, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([0, 3, 0, 0, 0, 0, 0, 0])> {
     pub const VOLUME: Self = __dim!(Self {
         name: "Volume",
-        symbol: "L³",
         units: &[
             // Metric volume units
             Unit::LITER,
@@ -413,7 +419,6 @@ impl Dimension<crate::dimension_exponents!([0, 3, 0, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([0, 0, -1, 0, 0, 0, 0, 0])> {
     pub const FREQUENCY: Self = __dim!(Self {
         name: "Frequency",
-        symbol: "T⁻¹",
         units: &[Unit::HERTZ],
     });
 }
@@ -421,7 +426,6 @@ impl Dimension<crate::dimension_exponents!([0, 0, -1, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 1, -2, 0, 0, 0, 0, 0])> {
     pub const FORCE: Self = __dim!(Self {
         name: "Force",
-        symbol: "MLT⁻²",
         units: &[Unit::NEWTON],
     });
 }
@@ -429,7 +433,6 @@ impl Dimension<crate::dimension_exponents!([1, 1, -2, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -2, 0, 0, 0, 0, 0])> {
     pub const ENERGY: Self = __dim!(Self {
         name: "Energy",
-        symbol: "ML²T⁻²",
         units: &[
             Unit::JOULE,
             Unit::ELECTRONVOLT,
@@ -446,7 +449,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -2, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -3, 0, 0, 0, 0, 0])> {
     pub const POWER: Self = __dim!(Self {
         name: "Power",
-        symbol: "ML²T⁻³",
         units: &[Unit::WATT, Unit::HORSEPOWER],
     });
 }
@@ -454,7 +456,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -3, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, -1, -2, 0, 0, 0, 0, 0])> {
     pub const PRESSURE: Self = __dim!(Self {
         name: "Pressure",
-        symbol: "ML⁻¹T⁻²",
         units: &[
             Unit::PASCAL,
             Unit::TORR,
@@ -468,7 +469,6 @@ impl Dimension<crate::dimension_exponents!([1, -1, -2, 0, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([0, 0, 1, 1, 0, 0, 0, 0])> {
     pub const ELECTRIC_CHARGE: Self = __dim!(Self {
         name: "Electric Charge",
-        symbol: "TI",
         units: &[Unit::COULOMB],
     });
 }
@@ -476,7 +476,6 @@ impl Dimension<crate::dimension_exponents!([0, 0, 1, 1, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -3, -1, 0, 0, 0, 0])> {
     pub const ELECTRIC_POTENTIAL: Self = __dim!(Self {
         name: "Electric Potential",
-        symbol: "ML²T⁻³I⁻¹",
         units: &[Unit::VOLT],
     });
 }
@@ -484,7 +483,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -3, -1, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([-1, -2, 4, 2, 0, 0, 0, 0])> {
     pub const CAPACITANCE: Self = __dim!(Self {
         name: "Capacitance",
-        symbol: "M⁻¹L⁻²T⁴I²",
         units: &[Unit::FARAD],
     });
 }
@@ -492,7 +490,6 @@ impl Dimension<crate::dimension_exponents!([-1, -2, 4, 2, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -3, -2, 0, 0, 0, 0])> {
     pub const ELECTRIC_RESISTANCE: Self = __dim!(Self {
         name: "Electric Resistance",
-        symbol: "ML²T⁻³I⁻²",
         units: &[Unit::OHM],
     });
 }
@@ -500,7 +497,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -3, -2, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([-1, -2, 3, 2, 0, 0, 0, 0])> {
     pub const ELECTRIC_CONDUCTANCE: Self = __dim!(Self {
         name: "Electric Conductance",
-        symbol: "M⁻¹L⁻²T³I²",
         units: &[Unit::SIEMENS],
     });
 }
@@ -508,7 +504,6 @@ impl Dimension<crate::dimension_exponents!([-1, -2, 3, 2, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -2, -2, 0, 0, 0, 0])> {
     pub const INDUCTANCE: Self = __dim!(Self {
         name: "Inductance",
-        symbol: "ML²T⁻²I⁻²",
         units: &[Unit::HENRY],
     });
 }
@@ -516,7 +511,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -2, -2, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 0, -2, -1, 0, 0, 0, 0])> {
     pub const MAGNETIC_FIELD: Self = __dim!(Self {
         name: "Magnetic Field",
-        symbol: "MT⁻²I⁻¹",
         units: &[Unit::TESLA, Unit::GAUSS],
     });
 }
@@ -524,7 +518,6 @@ impl Dimension<crate::dimension_exponents!([1, 0, -2, -1, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([1, 2, -2, -1, 0, 0, 0, 0])> {
     pub const MAGNETIC_FLUX: Self = __dim!(Self {
         name: "Magnetic Flux",
-        symbol: "ML²T⁻²I⁻¹",
         units: &[Unit::WEBER],
     });
 }
@@ -532,7 +525,6 @@ impl Dimension<crate::dimension_exponents!([1, 2, -2, -1, 0, 0, 0, 0])> {
 impl Dimension<crate::dimension_exponents!([0, -2, 0, 0, 0, 0, 1, 0])> {
     pub const ILLUMINANCE: Self = __dim!(Self {
         name: "Illuminance",
-        symbol: "L⁻²Cd",
         units: &[Unit::LUX, Unit::LUMEN],
     });
 }
@@ -540,37 +532,27 @@ impl Dimension<crate::dimension_exponents!([0, -2, 0, 0, 0, 0, 1, 0])> {
 impl Dimension<crate::dimension_exponents!([1, -3, 0, 0, 0, 0, 0, 0])> {
     pub const VOLUME_MASS_DENSITY: Self = __dim!(Self {
         name: "Volume Mass Density",
-        symbol: "ML⁻³",
-        units: &[
-            // No atomic units for volume mass density - it's a derived dimension
-        ],
+        units: &[],
     });
 }
 
 impl Dimension<crate::dimension_exponents!([1, -1, 0, 0, 0, 0, 0, 0])> {
     pub const LINEAR_MASS_DENSITY: Self = __dim!(Self {
         name: "Linear Mass Density",
-        symbol: "ML⁻¹",
-        units: &[
-            // No atomic units for linear mass density - it's a derived dimension
-        ],
+        units: &[],
     });
 }
 
 impl Dimension<crate::dimension_exponents!([1, -1, 1, 0, 0, 0, 0, 0])> {
     pub const DYNAMIC_VISCOSITY: Self = __dim!(Self {
         name: "Dynamic Viscosity",
-        symbol: "ML⁻¹T⁻¹",
-        units: &[
-            // No atomic units for dynamic viscosity - it's a derived dimension
-        ],
+        units: &[],
     });
 }
 
 impl Dimension<crate::dimension_exponents!([0, 2, -1, 0, 0, 0, 0, 0])> {
     pub const KINEMATIC_VISCOSITY: Self = __dim!(Self {
         name: "Kinematic Viscosity",
-        symbol: "L²T⁻¹",
         units: &[Unit::STOKES],
     });
 }
@@ -620,7 +602,21 @@ macro_rules! __dim {
     ) => {
         Self {
             name: $name,
-            symbol: $symbol,
+            symbol: Some($symbol),
+            exponents: TypeDimensionExponents::new(),
+            units: &[$($unit),*],
+            units_erased: &[$($unit.erase()),*],
+        }
+    };
+    (
+        Self {
+            name: $name:expr,
+            units: &[$($unit:path),* $(,)?] $(,)?
+        }
+    ) => {
+        Self {
+            name: $name,
+            symbol: None,
             exponents: TypeDimensionExponents::new(),
             units: &[$($unit),*],
             units_erased: &[$($unit.erase()),*],

@@ -40,16 +40,19 @@ fn calculate_similarity(s1: &str, s2: &str) -> f64 {
 fn get_all_available_dimensions() -> Vec<String> {
     let mut dimensions = Vec::new();
 
-    // Get all dimensions from the whippyunits-core data
     for dimension in Dimension::ALL {
-        // Add dimension name
         dimensions.push(dimension.name.to_string());
 
-        // Add dimension symbol
-        dimensions.push(dimension.symbol.to_string());
+        let spaceless = dimension.name.replace(' ', "");
+        if spaceless != dimension.name {
+            dimensions.push(spaceless);
+        }
+
+        if let Some(symbol) = dimension.symbol {
+            dimensions.push(symbol.to_string());
+        }
     }
 
-    // Remove duplicates and sort
     dimensions.sort();
     dimensions.dedup();
     dimensions

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-07-13
+
+### Added
+
+- Dimension traits for all 20 named composite dimensions (`Area`, `Volume`, `Frequency`, `Force`, `Energy`, `Power`, `Pressure`, `ElectricCharge`, `ElectricPotential`, `Capacitance`, `ElectricResistance`, `ElectricConductance`, `Inductance`, `MagneticField`, `MagneticFlux`, `Illuminance`, `VolumeMassDensity`, `LinearMassDensity`, `DynamicViscosity`, `KinematicViscosity`) — these can now be used as trait bounds in the same way as the atomic dimension traits (`Mass`, `Length`, etc.)
+- Hover documentation in `define_generic_dimension!` now works for all named dimensions (atomic and composite), derived automatically from the source-of-truth definitions in `whippyunits-core`
+- `DynDimensionExponents::to_symbol_string()` for formatting dimension exponents with unicode superscripts (e.g. `ML²T⁻³I⁻¹`)
+
+### Changed
+
+- `Dimension::symbol` is now `Option<&'static str>` — only atomic/basis dimensions have symbols; composite dimensions no longer carry redundant exponent-formula strings
+- `define_generic_dimension!` hover documentation and trait type resolution are now driven dynamically from `Dimension::find_dimension()` instead of hardcoded match arms
+- `Dimension::find_dimension()` now ignores spaces in dimension names, so `ElectricPotential` matches `"Electric Potential"`
+
+### Fixed
+
+- `define_generic_dimension!` now correctly resolves multi-word dimension names like `ElectricPotential` (previously failed because Rust identifiers cannot contain spaces)
+- **lsp-proxy**: `parse_parameter` no longer treats unresolved const generic names (e.g. `SCALE_P2`) as zero — they are now correctly classified as unresolved, preventing false "dimensionless" formatting in hover tooltips
+- **lsp-proxy**: Trait signature simplification (`impl Add for Quantity<...>`) is no longer discarded by the subsequent type formatting pass
+- **lsp-proxy**: Fixed off-by-one in test input for wholly-unresolved type formatting (missing closing `>`)
+
 ## [0.2.5] - 2026-07-08
 
 ### Added

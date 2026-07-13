@@ -842,7 +842,9 @@ impl<
 
         // Fallback to dimension symbol if no unit found
         if let Some(dimension) = Dimension::find_dimension_by_exponents(source_dimensions) {
-            return dimension.symbol; // Return &'static str directly
+            if let Some(symbol) = dimension.symbol {
+                return symbol;
+            }
         }
 
         // Final fallback

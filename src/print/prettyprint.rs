@@ -170,7 +170,7 @@ fn generate_dimension_symbols_unicode(exponents: Vec<i16>) -> String {
         if exp != 0 && exp != -32768 {
             let symbol = whippyunits_core::Dimension::BASIS
                 .get(idx)
-                .map(|dim| dim.symbol)
+                .and_then(|dim| dim.symbol)
                 .unwrap_or("?");
             let superscript = to_unicode_superscript(exp, false);
             parts.push(format!("{}{}", symbol, superscript));
@@ -184,7 +184,7 @@ fn generate_dimension_symbols_unicode(exponents: Vec<i16>) -> String {
             // Only add unsolved dimensions
             let symbol = whippyunits_core::Dimension::BASIS
                 .get(idx)
-                .map(|dim| dim.symbol)
+                .and_then(|dim| dim.symbol)
                 .unwrap_or("?");
             unsolved_parts.push(format!("{}{}", symbol, "ˀ"));
         }

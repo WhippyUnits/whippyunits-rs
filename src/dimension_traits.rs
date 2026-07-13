@@ -103,6 +103,28 @@ define_atomic_dimension_trait!(0, 0, 0, 0, 0, 1, 0, 0, Amount);
 define_atomic_dimension_trait!(0, 0, 0, 0, 0, 0, 1, 0, Luminosity);
 define_atomic_dimension_trait!(0, 0, 0, 0, 0, 0, 0, 1, Angle);
 
+// Define traits for composite/derived dimensions
+define_atomic_dimension_trait!(0, 2, 0, 0, 0, 0, 0, 0, Area);
+define_atomic_dimension_trait!(0, 3, 0, 0, 0, 0, 0, 0, Volume);
+define_atomic_dimension_trait!(0, 0, -1, 0, 0, 0, 0, 0, Frequency);
+define_atomic_dimension_trait!(1, 1, -2, 0, 0, 0, 0, 0, Force);
+define_atomic_dimension_trait!(1, 2, -2, 0, 0, 0, 0, 0, Energy);
+define_atomic_dimension_trait!(1, 2, -3, 0, 0, 0, 0, 0, Power);
+define_atomic_dimension_trait!(1, -1, -2, 0, 0, 0, 0, 0, Pressure);
+define_atomic_dimension_trait!(0, 0, 1, 1, 0, 0, 0, 0, ElectricCharge);
+define_atomic_dimension_trait!(1, 2, -3, -1, 0, 0, 0, 0, ElectricPotential);
+define_atomic_dimension_trait!(-1, -2, 4, 2, 0, 0, 0, 0, Capacitance);
+define_atomic_dimension_trait!(1, 2, -3, -2, 0, 0, 0, 0, ElectricResistance);
+define_atomic_dimension_trait!(-1, -2, 3, 2, 0, 0, 0, 0, ElectricConductance);
+define_atomic_dimension_trait!(1, 2, -2, -2, 0, 0, 0, 0, Inductance);
+define_atomic_dimension_trait!(1, 0, -2, -1, 0, 0, 0, 0, MagneticField);
+define_atomic_dimension_trait!(1, 2, -2, -1, 0, 0, 0, 0, MagneticFlux);
+define_atomic_dimension_trait!(0, -2, 0, 0, 0, 0, 1, 0, Illuminance);
+define_atomic_dimension_trait!(1, -3, 0, 0, 0, 0, 0, 0, VolumeMassDensity);
+define_atomic_dimension_trait!(1, -1, 0, 0, 0, 0, 0, 0, LinearMassDensity);
+define_atomic_dimension_trait!(1, -1, 1, 0, 0, 0, 0, 0, DynamicViscosity);
+define_atomic_dimension_trait!(0, 2, -1, 0, 0, 0, 0, 0, KinematicViscosity);
+
 /// Defines a trait representing a scale-generic dimension (like Length, Area, Energy).
 ///
 /// Generic dimensions can be used to write arithmetic operations that are generic over a dimensional structure

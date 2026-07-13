@@ -60,8 +60,10 @@ impl UnitFormatter {
 
         // Work within the existing markdown structure
         // Find the first code block and replace its content
-        if let Some(code_start) = original_text.find("```rust") {
-            let after_code_start = &original_text[code_start + 7..]; // Skip "```rust"
+        // Use `text` (which may have been pre-transformed, e.g. trait simplification)
+        // rather than `original_text` so earlier transformations aren't discarded.
+        if let Some(code_start) = text.find("```rust") {
+            let after_code_start = &text[code_start + 7..]; // Skip "```rust"
             if let Some(code_end) = after_code_start.find("```") {
                 let code_content = &after_code_start[..code_end];
 
@@ -69,18 +71,27 @@ impl UnitFormatter {
                 let formatted_content =
                     self.format_quantity_types(code_content, config.verbose, config.unicode, false);
 
-                // Check if we actually transformed anything
-                let was_transformed = formatted_content != code_content;
+                // Check if we actually transformed anything (compare against original)
+                let original_code_content = original_text
+                    .find("```rust")
+                    .and_then(|s| {
+                        let after = &original_text[s + 7..];
+                        after.find("```").map(|e| &after[..e])
+                    });
+                let was_transformed = original_code_content
+                    .map_or(true, |orig| formatted_content != orig);
 
                 // Extract raw type from the original code content if we transformed it
                 let raw_type = if was_transformed && config.include_raw {
-                    self.extract_raw_type_from_hover(code_content)
+                    original_code_content
+                        .map(|c| self.extract_raw_type_from_hover(c))
+                        .unwrap_or_default()
                 } else {
                     String::new()
                 };
 
                 // Replace the content in the existing code block
-                let before_code = &original_text[..code_start + 7]; // Include "```rust"
+                let before_code = &text[..code_start + 7]; // Include "```rust"
                 let after_code_block = &after_code_start[code_end + 3..]; // Skip closing ```
 
                 let result = if !raw_type.is_empty() {
@@ -587,13 +598,11 @@ impl UnitFormatter {
         ("f64".to_string(), None)
     }
 
-    /// Parse a parameter that could be a number or underscore placeholder
+    /// Parse a parameter that could be a number or underscore placeholder.
+    /// Non-numeric identifiers (e.g. const generic names like `SCALE_P2`) are
+    /// treated as unresolved, same as `_`.
     fn parse_parameter(&self, param: &str) -> i16 {
-        if param == "_" {
-            i16::MIN // Unknown placeholder
-        } else {
-            param.parse().unwrap_or(0)
-        }
+        param.parse().unwrap_or(i16::MIN)
     }
 
     /// Extract just the raw type information from hover content

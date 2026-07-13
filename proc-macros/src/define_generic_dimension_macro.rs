@@ -322,107 +322,49 @@ impl DefineGenericDimensionInput {
         }
     }
 
-    /// Generate documentation for a single dimension identifier
+    /// Generate documentation for a single dimension identifier.
+    ///
+    /// Looks up the dimension in `Dimension::ALL` via `find_dimension` and derives
+    /// both the doc text and the trait path from the source-of-truth name.
     fn generate_single_dimension_doc(identifier: &Ident) -> Option<TokenStream> {
         let dimension_name = identifier.to_string();
 
-        // Check if the dimension is valid first
-        if !Self::is_valid_dimension(&dimension_name) {
+        let Some(dim) = Dimension::find_dimension(&dimension_name) else {
             let error_message = Self::generate_dimension_error_message(&dimension_name);
             return Some(quote! {
                 const _: () = {
                     compile_error!(#error_message);
                 };
             });
-        }
+        };
 
-        let doc_comment = Self::generate_dimension_doc_comment(&dimension_name);
+        // Trait name = dimension name with spaces stripped (e.g. "Electric Potential" -> "ElectricPotential")
+        let trait_name = dim.name.replace(' ', "");
+        let trait_ident = syn::Ident::new(&trait_name, proc_macro2::Span::call_site());
 
-        // Create a new identifier with the same span as the original
+        // Build doc text from the source of truth
+        let is_basis = dim.symbol.is_some();
+        let kind = if is_basis { "Atomic" } else { "Derived" };
+        let symbol_part = match dim.symbol {
+            Some(s) => format!(" ({s})"),
+            None => {
+                let s = dim.exponents.to_symbol_string();
+                if s == "1" { String::new() } else { format!(" ({s})") }
+            }
+        };
+        let doc_text = format!("{kind} dimension: {}{symbol_part}", dim.name);
+
         let doc_ident = syn::Ident::new(&dimension_name, identifier.span());
 
-        // Get the corresponding dimension trait type
-        let trait_type = Self::get_dimension_trait_type(&dimension_name)?;
-
-        // Use quote_spanned to preserve the span information for hover
-        // Create a hand-rolled trait alias in a throwaway const block for hover documentation
         Some(quote! {
             const _: () = {
-                #doc_comment
+                #[doc = #doc_text]
                 #[allow(dead_code)]
-                trait #doc_ident: #trait_type {}
+                trait #doc_ident: whippyunits::dimension_traits::#trait_ident {}
 
-                impl<U: #trait_type> #doc_ident for U {}
+                impl<U: whippyunits::dimension_traits::#trait_ident> #doc_ident for U {}
             };
         })
-    }
-
-    /// Generate documentation comment for a dimension
-    fn generate_dimension_doc_comment(dimension_name: &str) -> TokenStream {
-        let doc_text = Self::get_dimension_documentation_text(dimension_name);
-        quote! {
-            #[doc = #doc_text]
-        }
-    }
-
-    /// Get documentation text for a dimension
-    fn get_dimension_documentation_text(dimension_name: &str) -> String {
-        // Map dimension names/symbols to their documentation
-        match dimension_name {
-            // Atomic dimensions - full names
-            "Mass" => "Atomic dimension: Mass (M) - The fundamental dimension of mass in the SI system".to_string(),
-            "Length" => "Atomic dimension: Length (L) - The fundamental dimension of length in the SI system".to_string(),
-            "Time" => "Atomic dimension: Time (T) - The fundamental dimension of time in the SI system".to_string(),
-            "Current" => "Atomic dimension: Current (I) - The fundamental dimension of electric current in the SI system".to_string(),
-            "Temperature" => "Atomic dimension: Temperature (Θ) - The fundamental dimension of thermodynamic temperature in the SI system".to_string(),
-            "Amount" => "Atomic dimension: Amount (N) - The fundamental dimension of amount of substance in the SI system".to_string(),
-            "Luminosity" => "Atomic dimension: Luminosity (J) - The fundamental dimension of luminous intensity in the SI system".to_string(),
-            "Angle" => "Atomic dimension: Angle (A) - The fundamental dimension of plane angle in the SI system".to_string(),
-            // Atomic dimensions - symbols
-            "M" => "Atomic dimension: Mass (M) - The fundamental dimension of mass in the SI system".to_string(),
-            "L" => "Atomic dimension: Length (L) - The fundamental dimension of length in the SI system".to_string(),
-            "T" => "Atomic dimension: Time (T) - The fundamental dimension of time in the SI system".to_string(),
-            "I" => "Atomic dimension: Current (I) - The fundamental dimension of electric current in the SI system".to_string(),
-            "Θ" => "Atomic dimension: Temperature (Θ) - The fundamental dimension of thermodynamic temperature in the SI system".to_string(),
-            "N" => "Atomic dimension: Amount (N) - The fundamental dimension of amount of substance in the SI system".to_string(),
-            "J" => "Atomic dimension: Luminosity (J) - The fundamental dimension of luminous intensity in the SI system".to_string(),
-            "A" => "Atomic dimension: Angle (A) - The fundamental dimension of plane angle in the SI system".to_string(),
-            _ => format!("Dimension: {} - Custom dimension expression", dimension_name),
-        }
-    }
-
-    /// Get the corresponding dimension trait type for a dimension name/symbol
-    fn get_dimension_trait_type(dimension_name: &str) -> Option<TokenStream> {
-        // Map dimension names/symbols to their corresponding trait types
-        match dimension_name {
-            // Atomic dimensions - full names
-            "Mass" => Some(quote! { whippyunits::dimension_traits::Mass }),
-            "Length" => Some(quote! { whippyunits::dimension_traits::Length }),
-            "Time" => Some(quote! { whippyunits::dimension_traits::Time }),
-            "Current" => Some(quote! { whippyunits::dimension_traits::Current }),
-            "Temperature" => Some(quote! { whippyunits::dimension_traits::Temperature }),
-            "Amount" => Some(quote! { whippyunits::dimension_traits::Amount }),
-            "Luminosity" => Some(quote! { whippyunits::dimension_traits::Luminosity }),
-            "Angle" => Some(quote! { whippyunits::dimension_traits::Angle }),
-
-            // Atomic dimensions - symbols
-            "M" => Some(quote! { whippyunits::dimension_traits::Mass }),
-            "L" => Some(quote! { whippyunits::dimension_traits::Length }),
-            "T" => Some(quote! { whippyunits::dimension_traits::Time }),
-            "I" => Some(quote! { whippyunits::dimension_traits::Current }),
-            "Θ" => Some(quote! { whippyunits::dimension_traits::Temperature }),
-            "N" => Some(quote! { whippyunits::dimension_traits::Amount }),
-            "J" => Some(quote! { whippyunits::dimension_traits::Luminosity }),
-            "A" => Some(quote! { whippyunits::dimension_traits::Angle }),
-
-            _ => None, // Unknown dimension
-        }
-    }
-
-    /// Check if a dimension name is valid
-    fn is_valid_dimension(dimension_name: &str) -> bool {
-        // Check if it's a direct dimension match
-        Dimension::find_dimension(dimension_name).is_some()
     }
 
     /// Generate error message with suggestions for an unknown dimension
@@ -430,11 +372,13 @@ impl DefineGenericDimensionInput {
         let suggestions = find_similar_dimensions(dimension_name, 0.7);
         if suggestions.is_empty() {
             let supported_names: Vec<&str> = Dimension::ALL.iter().map(|dim| dim.name).collect();
-            let supported_symbols: Vec<&str> =
-                Dimension::ALL.iter().map(|dim| dim.symbol).collect();
+            let supported_symbols: Vec<&str> = Dimension::ALL
+                .iter()
+                .filter_map(|dim| dim.symbol)
+                .collect();
 
             format!(
-                "Unknown dimension '{}'. Supported dimension names: {}. Supported dimension symbols: {}", 
+                "Unknown dimension '{}'. Supported dimension names: {}. Supported dimension symbols: {}",
                 dimension_name,
                 supported_names.join(", "),
                 supported_symbols.join(", ")
