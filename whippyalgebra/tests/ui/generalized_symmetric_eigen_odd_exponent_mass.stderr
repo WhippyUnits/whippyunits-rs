@@ -1,0 +1,21 @@
+error[E0271]: type mismatch resolving `<PInt<UInt<UTerm, B1>> as Rem<PInt<UInt<UInt<UTerm, B1>, B0>>>>::Output == Z0`
+  --> tests/ui/generalized_symmetric_eigen_odd_exponent_mass.rs:25:46
+   |
+25 |     let _bad = k.generalized_symmetric_eigen(&m);
+   |                  --------------------------- ^^ expected `Z0`, found `PInt<UInt<UTerm, B1>>`
+   |                  |
+   |                  required by a bound introduced by this call
+   |
+   = note: expected struct `typenum::int::Z0`
+              found struct `typenum::int::PInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>>`
+   = note: required for `typenum::int::PInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>>` to implement `typenum::type_operators::PartialDiv<typenum::int::PInt<typenum::uint::UInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>, typenum::bit::B0>>>`
+   = note: required for `whippyunits_core::num::N<1>` to implement `whippyunits_core::num::Halve`
+   = note: required for `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M<1>>>` to implement `UnitSqrt`
+note: required by a bound in `whippyalgebra::nalgebra::linalg::symmetric_eigen::<impl UniformUnitMatrix<U, Matrix<T, D, D, S>, Brand>>::generalized_symmetric_eigen`
+  --> src/nalgebra/linalg/symmetric_eigen.rs
+   |
+   |     pub fn generalized_symmetric_eigen<Um, Sm>(
+   |            --------------------------- required by a bound in this associated function
+...
+   |         Um: UnitSqrt,
+   |             ^^^^^^^^ required by this bound in `whippyalgebra::nalgebra::linalg::symmetric_eigen::<impl UniformUnitMatrix<U, Matrix<T, D, D, S>, Brand>>::generalized_symmetric_eigen`

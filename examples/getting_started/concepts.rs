@@ -3,9 +3,6 @@
 //! This example explains the fundamental concepts you need to understand
 //! before using whippyunits effectively.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
 use whippyunits::quantity;
 use whippyunits::value;
 

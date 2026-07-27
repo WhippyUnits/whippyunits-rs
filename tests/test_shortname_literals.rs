@@ -6,9 +6,9 @@ use whippyunits::*;
 #[test]
 fn test_shortname_custom_literals() {
     // Test shortname literals that delegate to unit! macro
-    let distance: unit!(m) = 5.0m;
-    let mass: unit!(kg) = 2.5kg;
-    let time: unit!(s) = 10.0s;
+    let distance: qty!(m) = 5.0m;
+    let mass: qty!(kg) = 2.5kg;
+    let time: qty!(s) = 10.0s;
 
     // These should create proper unit types using the unit! macro with new initialization
     // We can test that they have the correct values by accessing the .unsafe_value field

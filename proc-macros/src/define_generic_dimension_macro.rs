@@ -73,10 +73,10 @@ impl DimensionExpr {
             if value == 1 {
                 Ok(DimensionExpr::Dimensionless)
             } else {
-                return Err(syn::Error::new(
+                Err(syn::Error::new(
                     lit.span(),
                     "Only the literal '1' is supported to represent dimensionless quantities",
-                ));
+                ))
             }
         } else {
             let ident: Ident = input.parse()?;
@@ -268,8 +268,10 @@ impl DefineGenericDimensionInput {
                 const SCALE_PI: i16,
                 T
             > #trait_name for whippyunits::quantity::Quantity<
-                whippyunits::quantity::Scale<whippyunits::quantity::_2<SCALE_P2>, whippyunits::quantity::_3<SCALE_P3>, whippyunits::quantity::_5<SCALE_P5>, whippyunits::quantity::_Pi<SCALE_PI>>,
-                whippyunits::quantity::Dimension<whippyunits::quantity::_M<#mass_exp>, whippyunits::quantity::_L<#length_exp>, whippyunits::quantity::_T<#time_exp>, whippyunits::quantity::_I<#current_exp>, whippyunits::quantity::_Θ<#temp_exp>, whippyunits::quantity::_N<#amount_exp>, whippyunits::quantity::_J<#lum_exp>, whippyunits::quantity::_A<#angle_exp>>,
+                whippyunits::quantity::Unit<
+                    whippyunits::quantity::Scale<whippyunits::quantity::_2<SCALE_P2>, whippyunits::quantity::_3<SCALE_P3>, whippyunits::quantity::_5<SCALE_P5>, whippyunits::quantity::_Pi<SCALE_PI>>,
+                    whippyunits::quantity::Dimension<whippyunits::quantity::_M<#mass_exp>, whippyunits::quantity::_L<#length_exp>, whippyunits::quantity::_T<#time_exp>, whippyunits::quantity::_I<#current_exp>, whippyunits::quantity::_Θ<#temp_exp>, whippyunits::quantity::_N<#amount_exp>, whippyunits::quantity::_J<#lum_exp>, whippyunits::quantity::_A<#angle_exp>>
+                >,
                 T
             > {
                 type Unit = Self;

@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+  --> tests/ui/wrong_element_unit.rs:16:27
+   |
+16 |     let _wrong: qty!(s) = a.get::<0, 0>();
+   |                 -------   ^^^^^^^^^^^^^^^ expected `1`, found `0`
+   |                 |
+   |                 expected due to this
+   |
+   = note: expected struct `Quantity<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>, _I, _Θ, _N, _J, _A>>>`
+              found struct `Quantity<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<0>, _I, _Θ, _N, _J, _A>>>`

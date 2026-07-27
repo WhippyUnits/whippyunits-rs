@@ -3,13 +3,10 @@
 //! This example shows the most common compile errors you'll encounter
 //! and how to resolve them.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
 use whippyunits::api::rescale;
 use whippyunits::define_unit_declarators;
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 use whippyunits::value;
 
 // Create a branded declarator module for brand mismatch examples
@@ -51,13 +48,13 @@ fn main() {
     println!("   let sum = meters + millimeters;  // ❌ Compile error!\n");
 
     // ✅ Correct way:
-    let sum1: unit!(m) = meters + rescale(millimeters);
-    let sum2: unit!(mm) = rescale(meters) + millimeters;
+    let sum1: qty!(m) = meters + rescale(millimeters);
+    let sum2: qty!(mm) = rescale(meters) + millimeters;
 
     println!("   ✅ Correct:");
-    println!("   let sum1: unit!(m) = meters + rescale(millimeters);");
+    println!("   let sum1: qty!(m) = meters + rescale(millimeters);");
     println!("   // Result: {} m", value!(sum1, m));
-    println!("   let sum2: unit!(mm) = rescale(meters) + millimeters;");
+    println!("   let sum2: qty!(mm) = rescale(meters) + millimeters;");
     println!("   // Result: {} mm\n", value!(sum2, mm));
 
     // ============================================================
@@ -77,7 +74,7 @@ fn main() {
 
     // ✅ Correct way: Create new quantity with same storage type
     let distance_i32_as_f64 = quantity!(distance_i32.unsafe_value as f64, m);
-    let sum_f64: unit!(m) = distance_f64 + distance_i32_as_f64;
+    let sum_f64: qty!(m) = distance_f64 + distance_i32_as_f64;
     println!("   ✅ Correct:");
     println!("   // Convert to same storage type, then add");
     println!("   // Result: {} m\n", value!(sum_f64, m));

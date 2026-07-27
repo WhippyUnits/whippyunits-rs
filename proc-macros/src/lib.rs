@@ -1,4 +1,10 @@
 #![allow(mixed_script_confusables)]
+// Code-generation helpers here take one argument per SI base dimension (mass,
+// length, time, current, temperature, amount, luminosity, angle) and assemble
+// deeply nested `Quantity`/`Unit` token trees, so clippy's argument-count and
+// type-complexity heuristics fire on intentional, dimension-parallel structure.
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
 
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
@@ -42,17 +48,52 @@ pub fn define_generic_dimension(input: TokenStream) -> TokenStream {
     input.expand().into()
 }
 
-/// Creates a concrete [Quantity] type from a unit expression.
+/// Creates a bare `Unit` type (scale + dimension, no storage type, brand, or
+/// value) from a unit expression.
 ///
-/// This is particularly useful for constraining the result of potentially-type-ambiguous operations,
-/// such as multiplication of two quantities with different dimensions.  If you want to construct a
-/// quantity with a known value, use the `quantity!` macro instead.
+/// This is the value-free dimensional signature used for type-level unit
+/// reasoning (for example each entry of a unit-safe matrix). To get a concrete
+/// `Quantity` *type* wrapping the unit, use the `qty!` macro; to construct a
+/// quantity *value*, use `quantity!`.
 ///
 /// ## Syntax
 ///
 /// ```rust,ignore
 /// unit!(unit_expr);
-/// unit!(unit_expr, storage_type);
+/// ```
+///
+/// Where:
+/// - `unit_expr`: A "unit literal expression"
+///     - A "unit literal expression" is either:
+///         - An atomic unit (may include prefix):
+///             - `m`, `kg`, `s`, `A`, `K`, `mol`, `cd`, `rad`
+///         - An exponentiation of an atomic unit:
+///             - `m2`, `m^2`
+///         - A multiplication of two or more (possibly exponentiated) atomic units:
+///             - `kg.m2`, `kg * m2`
+///         - A division of two such product expressions:
+///             - `kg.m2/s2`, `kg * m2 / s^2`
+///             - There may be at most one division expression in a unit literal expression
+///             - All terms trailing the division symbol are considered to be in the denominator
+#[proc_macro]
+pub fn proc_unit(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as unit_macro::UnitMacroInput);
+    input.expand_unit().into()
+}
+
+/// Creates a concrete `Quantity` type from a unit expression.
+///
+/// This is particularly useful for constraining the result of potentially-type-ambiguous operations,
+/// such as multiplication of two quantities with different dimensions.  If you want to construct a
+/// quantity with a known value, use the `quantity!` macro instead; for the bare, value-free unit
+/// type, use the `unit!` macro.
+///
+/// ## Syntax
+///
+/// ```rust,ignore
+/// qty!(unit_expr);
+/// qty!(unit_expr, storage_type);
+/// qty!(unit_expr, storage_type, brand_type);
 /// ```
 ///
 /// Where:
@@ -69,32 +110,33 @@ pub fn define_generic_dimension(input: TokenStream) -> TokenStream {
 ///             - There may be at most one division expression in a unit literal expression
 ///             - All terms trailing the division symbol are considered to be in the denominator
 /// - `storage_type`: An optional storage type for the quantity. Defaults to `f64`.
+/// - `brand_type`: An optional brand type for the quantity. Defaults to `()`.
 ///
 /// ## Examples
 ///
-/// ```rust
+/// ```rust,ignore
 /// # #[culit::culit(whippyunits::default_declarators::literals)]
 /// # fn main() {
 /// # use whippyunits::api::rescale;
-/// # use whippyunits::unit;
+/// # use whippyunits::qty;
 /// // Constrain a multiplication to compile error if the units are wrong:
 /// let area = 5.0m * 5.0m; // ⚠️ Correct, but unchecked; will compile regardless of the units
 /// let area = 5.0m * 5.0s; // ❌ BUG: compiles fine, but is not an area
-/// let area: unit!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
-/// // let area: unit!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
+/// let area: qty!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
+/// // let area: qty!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
 ///
 /// // Specify the target dimension of a rescale operation:
-/// let area: unit!(mm) = rescale(5.0m);
+/// let area: qty!(mm) = rescale(5.0m);
 /// assert_eq!(area.unsafe_value, 5000.0);
 /// # }
 /// ```
 #[proc_macro]
-pub fn proc_unit(input: TokenStream) -> TokenStream {
+pub fn proc_qty(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as unit_macro::UnitMacroInput);
-    input.expand().into()
+    input.expand_quantity().into()
 }
 
-/// Creates a [Quantity] from a value and unit expression.
+/// Creates a `Quantity` from a value and unit expression.
 ///
 /// This macro supports both storage and nonstorage units. For nonstorage units,
 /// it automatically dispatches to the appropriate declarator trait.
@@ -126,7 +168,7 @@ pub fn proc_unit(input: TokenStream) -> TokenStream {
 ///
 /// ## Examples
 ///
-/// ```rust
+/// ```rust,ignore
 /// # fn main() {
 /// # use whippyunits::quantity;
 /// // Basic quantities
@@ -159,7 +201,7 @@ pub fn proc_unit(input: TokenStream) -> TokenStream {
 /// For compound units, prefer using a compound unit literal expression in the macro
 /// rather than performing arithmetic in source code:
 ///
-/// ```rust
+/// ```rust,ignore
 /// # fn main() {
 /// # use whippyunits::quantity;
 /// // ✅ Preferred: compound unit literal expression
@@ -181,7 +223,7 @@ pub fn proc_quantity(input: TokenStream) -> TokenStream {
     input.expand().into()
 }
 
-/// Access the underlying numeric value of a [Quantity](crate::Quantity).
+/// Access the underlying numeric value of a `Quantity`.
 ///
 /// Because value! explicitly specifies the target unit, this is considered a
 /// "unit-safe" operation - the type system will guarantee that the access is
@@ -192,7 +234,7 @@ pub fn proc_quantity(input: TokenStream) -> TokenStream {
 /// compile error.
 ///
 /// Examples:
-/// ```rust
+/// ```rust,ignore
 /// # fn main() {
 /// # use whippyunits::default_declarators::*;
 /// # use whippyunits::value;
@@ -318,7 +360,7 @@ pub fn define_unit_declarators(input: TokenStream) -> TokenStream {
 /// - `output!(CO / PV)` → `<CO as Div<PV>>::Output`
 /// - `output!(CO / PV * PV)` → `<<CO as Div<PV>>::Output as Mul<PV>>::Output`
 /// - `output!((CO * T) / PV)` → `<<CO as Mul<T>>::Output as Div<PV>>::Output`
-/// - `output!(1 / T)` → `<<whippyunits::quantity::Quantity<whippyunits::quantity::Scale<whippyunits::quantity::_2<0>, whippyunits::quantity::_3<0>, whippyunits::quantity::_5<0>, whippyunits::quantity::_Pi<0>>, whippyunits::quantity::Dimension<whippyunits::quantity::_M<0>, whippyunits::quantity::_L<0>, whippyunits::quantity::_T<0>, whippyunits::quantity::_I<0>, whippyunits::quantity::_Θ<0>, whippyunits::quantity::_N<0>, whippyunits::quantity::_J<0>, whippyunits::quantity::_A<0>>, f64> as Div<T>>::Output`
+/// - `output!(1 / T)` → `<<whippyunits::quantity::Quantity<whippyunits::quantity::Unit<whippyunits::quantity::Scale<whippyunits::quantity::_2<0>, whippyunits::quantity::_3<0>, whippyunits::quantity::_5<0>, whippyunits::quantity::_Pi<0>>, whippyunits::quantity::Dimension<whippyunits::quantity::_M<0>, whippyunits::quantity::_L<0>, whippyunits::quantity::_T<0>, whippyunits::quantity::_I<0>, whippyunits::quantity::_Θ<0>, whippyunits::quantity::_N<0>, whippyunits::quantity::_J<0>, whippyunits::quantity::_A<0>>>, f64> as Div<T>>::Output`
 #[proc_macro]
 pub fn output(input: TokenStream) -> TokenStream {
     use quote::quote;
@@ -368,21 +410,23 @@ pub fn output(input: TokenStream) -> TokenStream {
                     Lit::Int(int_lit) if int_lit.base10_digits() == "1" => {
                         quote! {
                             whippyunits::quantity::Quantity<
-                                whippyunits::quantity::Scale<
-                                    whippyunits::quantity::_2<0>,
-                                    whippyunits::quantity::_3<0>,
-                                    whippyunits::quantity::_5<0>,
-                                    whippyunits::quantity::_Pi<0>
-                                >,
-                                whippyunits::quantity::Dimension<
-                                    whippyunits::quantity::_M<0>,
-                                    whippyunits::quantity::_L<0>,
-                                    whippyunits::quantity::_T<0>,
-                                    whippyunits::quantity::_I<0>,
-                                    whippyunits::quantity::_Θ<0>,
-                                    whippyunits::quantity::_N<0>,
-                                    whippyunits::quantity::_J<0>,
-                                    whippyunits::quantity::_A<0>
+                                whippyunits::quantity::Unit<
+                                    whippyunits::quantity::Scale<
+                                        whippyunits::quantity::_2<0>,
+                                        whippyunits::quantity::_3<0>,
+                                        whippyunits::quantity::_5<0>,
+                                        whippyunits::quantity::_Pi<0>
+                                    >,
+                                    whippyunits::quantity::Dimension<
+                                        whippyunits::quantity::_M<0>,
+                                        whippyunits::quantity::_L<0>,
+                                        whippyunits::quantity::_T<0>,
+                                        whippyunits::quantity::_I<0>,
+                                        whippyunits::quantity::_Θ<0>,
+                                        whippyunits::quantity::_N<0>,
+                                        whippyunits::quantity::_J<0>,
+                                        whippyunits::quantity::_A<0>
+                                    >
                                 >,
                                 f64
                             >

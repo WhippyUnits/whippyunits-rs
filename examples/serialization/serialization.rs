@@ -5,7 +5,6 @@
 //! - JSON using the serialize_to_json function
 //! - String format using the fmt formatter
 
-use serde_json;
 use whippyunits::{quantity, serialization::serialize_to_json};
 
 fn main() {
@@ -61,9 +60,9 @@ fn main() {
     println!("   20 m/s as km/h: {}", velocity_kmh);
 
     println!("\n5. Formatting with precision:");
-    println!("   Default: {}", format!("{}", length.fmt("km")));
-    println!("   2 decimals: {}", format!("{:.2}", length.fmt("km")));
-    println!("   4 decimals: {}", format!("{:.4}", length.fmt("km")));
+    println!("   Default: {}", length.fmt("km"));
+    println!("   2 decimals: {:.2}", length.fmt("km"));
+    println!("   4 decimals: {:.4}", length.fmt("km"));
 
     println!("\n6. JSON format details:");
     println!("   The JSON format is: {{\"value\": <number>, \"unit\": \"<UCUM_unit_string>\"}}");

@@ -5,7 +5,9 @@ use syn::token::Comma;
 use syn::{Expr, Type};
 use whippyunits_core::{calculate_unit_conversion_factors, get_unit_info, Dimension, UnitExpr};
 
-use crate::utils::shared_utils::{generate_unit_documentation_for_expr, validate_known_units};
+use crate::utils::shared_utils::{
+    const_exp, generate_unit_documentation_for_expr, validate_known_units,
+};
 
 /// Input for the quantity macro
 pub struct QuantityMacroInput {
@@ -109,7 +111,7 @@ impl QuantityMacroInput {
         // Generate trait name using shared logic from whippyunits-core
         let full_trait_name = whippyunits_core::generate_declarator_trait_name(
             unit_info.system,
-            &dimension.name,
+            dimension.name,
             unit_info.conversion_factor,
             unit_info.affine_offset,
         );
@@ -149,21 +151,23 @@ impl QuantityMacroInput {
             .evaluate_with_mode(whippyunits_core::EvaluationMode::Tolerant);
         let (conversion_factor, affine_offset) = calculate_unit_conversion_factors(&self.unit_expr);
 
+        // Emit each exponent via `const_exp` so negative values round-trip
+        // through rust-analyzer's proc-macro bridge (see `const_exp` docs).
         let (mass_exp, length_exp, time_exp, current_exp, temp_exp, amount_exp, lum_exp, angle_exp) = (
-            result.dimension_exponents.0[0],
-            result.dimension_exponents.0[1],
-            result.dimension_exponents.0[2],
-            result.dimension_exponents.0[3],
-            result.dimension_exponents.0[4],
-            result.dimension_exponents.0[5],
-            result.dimension_exponents.0[6],
-            result.dimension_exponents.0[7],
+            const_exp(result.dimension_exponents.0[0]),
+            const_exp(result.dimension_exponents.0[1]),
+            const_exp(result.dimension_exponents.0[2]),
+            const_exp(result.dimension_exponents.0[3]),
+            const_exp(result.dimension_exponents.0[4]),
+            const_exp(result.dimension_exponents.0[5]),
+            const_exp(result.dimension_exponents.0[6]),
+            const_exp(result.dimension_exponents.0[7]),
         );
         let (p2, p3, p5, pi) = (
-            result.scale_exponents.0[0],
-            result.scale_exponents.0[1],
-            result.scale_exponents.0[2],
-            result.scale_exponents.0[3],
+            const_exp(result.scale_exponents.0[0]),
+            const_exp(result.scale_exponents.0[1]),
+            const_exp(result.scale_exponents.0[2]),
+            const_exp(result.scale_exponents.0[3]),
         );
 
         let storage_type_ty = self
@@ -188,18 +192,18 @@ impl QuantityMacroInput {
 
             quote! {
                 {
-                    use whippyunits::quantity::{Quantity, Scale, Dimension, _2, _3, _5, _Pi, _M, _L, _T, _I, _Θ, _N, _J, _A};
+                    use whippyunits::quantity::{Quantity, Unit, Scale, Dimension, _2, _3, _5, _Pi, _M, _L, _T, _I, _Θ, _N, _J, _A};
                     let raw_value: #storage_type_ty = #value_expr;
                     let converted_value = (raw_value as f64) * #cf + #af;
-                    Quantity::<Scale<_2<#p2>, _3<#p3>, _5<#p5>, _Pi<#pi>>, Dimension<_M<#mass_exp>, _L<#length_exp>, _T<#time_exp>, _I<#current_exp>, _Θ<#temp_exp>, _N<#amount_exp>, _J<#lum_exp>, _A<#angle_exp>>, #storage_type_ty, #brand_type_ty>::new(converted_value as #storage_type_ty)
+                    Quantity::<Unit<Scale<_2<#p2>, _3<#p3>, _5<#p5>, _Pi<#pi>>, Dimension<_M<#mass_exp>, _L<#length_exp>, _T<#time_exp>, _I<#current_exp>, _Θ<#temp_exp>, _N<#amount_exp>, _J<#lum_exp>, _A<#angle_exp>>>, #storage_type_ty, #brand_type_ty>::new(converted_value as #storage_type_ty)
                 }
             }
         } else {
             // Pure storage unit - no conversion needed
             quote! {
                 {
-                    use whippyunits::quantity::{Quantity, Scale, Dimension, _2, _3, _5, _Pi, _M, _L, _T, _I, _Θ, _N, _J, _A};
-                    Quantity::<Scale<_2<#p2>, _3<#p3>, _5<#p5>, _Pi<#pi>>, Dimension<_M<#mass_exp>, _L<#length_exp>, _T<#time_exp>, _I<#current_exp>, _Θ<#temp_exp>, _N<#amount_exp>, _J<#lum_exp>, _A<#angle_exp>>, #storage_type_ty, #brand_type_ty>::new(#value_expr)
+                    use whippyunits::quantity::{Quantity, Unit, Scale, Dimension, _2, _3, _5, _Pi, _M, _L, _T, _I, _Θ, _N, _J, _A};
+                    Quantity::<Unit<Scale<_2<#p2>, _3<#p3>, _5<#p5>, _Pi<#pi>>, Dimension<_M<#mass_exp>, _L<#length_exp>, _T<#time_exp>, _I<#current_exp>, _Θ<#temp_exp>, _N<#amount_exp>, _J<#lum_exp>, _A<#angle_exp>>>, #storage_type_ty, #brand_type_ty>::new(#value_expr)
                 }
             }
         }

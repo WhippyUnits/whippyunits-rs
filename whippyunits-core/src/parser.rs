@@ -221,8 +221,8 @@ impl UnitExpr {
         match self {
             UnitExpr::Unit(unit) => {
                 // Skip special units
-                if unit.name.to_string() == "power_of_10"
-                    || unit.name.to_string() == "dimensionless"
+                if unit.name == "power_of_10"
+                    || unit.name == "dimensionless"
                 {
                     return None;
                 }
@@ -254,8 +254,8 @@ impl UnitExpr {
         match self {
             UnitExpr::Unit(unit) => {
                 // Skip special units
-                if unit.name.to_string() == "power_of_10"
-                    || unit.name.to_string() == "dimensionless"
+                if unit.name == "power_of_10"
+                    || unit.name == "dimensionless"
                 {
                     return None;
                 }
@@ -295,7 +295,7 @@ impl UnitExpr {
         match self {
             UnitExpr::Unit(unit) => {
                 // Handle special power-of-10 scale factors
-                if unit.name.to_string() == "power_of_10" {
+                if unit.name == "power_of_10" {
                     return UnitEvaluationResult {
                         dimension_exponents: DynDimensionExponents::ZERO,
                         scale_exponents: ScaleExponents::_10(unit.exponent),
@@ -324,8 +324,8 @@ impl UnitExpr {
                         // Try all prefixes until we find one with a valid base unit
                         for prefix in SiPrefix::ALL {
                             // Try prefix symbol first (e.g., "kW" -> "W")
-                            if let Some(base) = prefix.strip_prefix_symbol(&unit.name.to_string()) {
-                                if !base.is_empty() {
+                            if let Some(base) = prefix.strip_prefix_symbol(&unit.name.to_string())
+                                && !base.is_empty() {
                                     // Check if the base unit exists
                                     if Dimension::find_unit_by_symbol(base).is_some() {
                                         let prefix_factor = prefix.factor_log10();
@@ -335,10 +335,9 @@ impl UnitExpr {
                                         break;
                                     }
                                 }
-                            }
                             // Try prefix name (e.g., "kilowatt" -> "watt")
-                            if let Some(base) = prefix.strip_prefix_name(&unit.name.to_string()) {
-                                if !base.is_empty() {
+                            if let Some(base) = prefix.strip_prefix_name(&unit.name.to_string())
+                                && !base.is_empty() {
                                     // Check if the base unit exists by name
                                     if Dimension::find_unit_by_name(base).is_some() {
                                         let prefix_factor = prefix.factor_log10();
@@ -348,7 +347,6 @@ impl UnitExpr {
                                         break;
                                     }
                                 }
-                            }
                         }
                     }
 
@@ -417,7 +415,7 @@ fn calculate_conversion_factors_recursive(expr: &UnitExpr) -> (f64, f64) {
     match expr {
         UnitExpr::Unit(unit) => {
             // Skip special units
-            if unit.name.to_string() == "power_of_10" || unit.name.to_string() == "dimensionless" {
+            if unit.name == "power_of_10" || unit.name == "dimensionless" {
                 return (1.0, 0.0);
             }
 
@@ -430,7 +428,7 @@ fn calculate_conversion_factors_recursive(expr: &UnitExpr) -> (f64, f64) {
                     // For exponents, conversion factor is raised to the power
                     conversion_factor = conversion_factor.powi(unit.exponent as i32);
                     // Affine offset is multiplied by the exponent (for temperature scales, etc.)
-                    affine_offset = affine_offset * unit.exponent as f64;
+                    affine_offset *= unit.exponent as f64;
                 }
 
                 (conversion_factor, affine_offset)
@@ -508,8 +506,8 @@ pub fn get_unit_info(unit_name: &str) -> Option<&'static Unit> {
     // Then check if this is a prefixed unit (like kg, kW, mm, etc.)
     // Only allow prefixing of base units (first unit in each dimension) and only for metric units
     for prefix in SiPrefix::ALL {
-        if let Some(base) = prefix.strip_prefix_symbol(unit_name) {
-            if !base.is_empty() {
+        if let Some(base) = prefix.strip_prefix_symbol(unit_name)
+            && !base.is_empty() {
                 // Check if the base unit exists and is a base unit (first unit in its dimension)
                 if let Some((unit, dimension)) = Dimension::find_unit_by_symbol(base) {
                     // Check if this is the first unit in its dimension (base unit)
@@ -526,9 +524,8 @@ pub fn get_unit_info(unit_name: &str) -> Option<&'static Unit> {
                     }
                 }
             }
-        }
-        if let Some(base) = prefix.strip_prefix_name(unit_name) {
-            if !base.is_empty() {
+        if let Some(base) = prefix.strip_prefix_name(unit_name)
+            && !base.is_empty() {
                 // Check if the base unit exists by name and is a base unit
                 if let Some((unit, dimension)) = Dimension::find_unit_by_name(base) {
                     // Check if this is the first unit in its dimension (base unit)
@@ -545,7 +542,6 @@ pub fn get_unit_info(unit_name: &str) -> Option<&'static Unit> {
                     }
                 }
             }
-        }
     }
 
     // If not found, return None

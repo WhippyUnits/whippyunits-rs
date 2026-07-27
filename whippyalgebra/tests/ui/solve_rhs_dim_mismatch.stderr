@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/solve_rhs_dim_mismatch.rs:22:24
+   |
+22 |     let _bad = a.solve(&b);
+   |                  ----- ^^ expected `1`, found `0`
+   |                  |
+   |                  arguments to this method are incorrect
+   |
+   = note: expected reference `&MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DNil>>, _, Matrix<f64, Const<2>, _, _>>`
+              found reference `&MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>, DNil>, Matrix<f64, Const<2>, Const<1>, ArrayStorage<f64, 2, 1>>>`
+note: method defined here
+  --> src/nalgebra/linalg/solve.rs
+   |
+   |     pub fn solve<BCols, C2, SB>(
+   |            ^^^^^

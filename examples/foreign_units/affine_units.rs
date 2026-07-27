@@ -5,14 +5,8 @@
 //! temperature scales and other measurements where the zero point
 //! differs from the storage unit.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
 // For method syntax (.celsius(), .fahrenheit(), etc.)
 use whippyunits::default_declarators::*;
-
-// For macro syntax (quantity! macro)
-use whippyunits::quantity;
 
 // For accessing values with unit safety
 use whippyunits::value;

@@ -114,19 +114,17 @@ impl SiPrefix {
     /// Checks both the primary symbol and any alternative symbols.
     pub fn strip_prefix_symbol<'r>(&self, s: &'r str) -> Option<&'r str> {
         // Try the primary symbol first
-        if s.len() >= self.symbol.len() {
-            if &s.as_bytes()[..self.symbol.len()] == self.symbol.as_bytes() {
+        if s.len() >= self.symbol.len()
+            && &s.as_bytes()[..self.symbol.len()] == self.symbol.as_bytes() {
                 return Some(&s[self.symbol.len()..]);
             }
-        }
 
         // Try alternative symbols
         for alt_symbol in self.alternative_symbols() {
-            if s.len() >= alt_symbol.len() {
-                if &s.as_bytes()[..alt_symbol.len()] == alt_symbol.as_bytes() {
+            if s.len() >= alt_symbol.len()
+                && &s.as_bytes()[..alt_symbol.len()] == alt_symbol.as_bytes() {
                     return Some(&s[alt_symbol.len()..]);
                 }
-            }
         }
 
         None

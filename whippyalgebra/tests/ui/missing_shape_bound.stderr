@@ -1,0 +1,5 @@
+error[E0277]: the trait bound `Const<N>: ToTypenum` is not satisfied
+  --> tests/ui/missing_shape_bound.rs:12:15
+   |
+12 |     let _ = m.block::<0, 0, N, N>();
+   |               ^^^^^ the trait `ShapeIndex` is not implemented for `Const<N>`

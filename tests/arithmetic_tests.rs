@@ -4,8 +4,8 @@
 use whippyunits::api::rescale;
 use whippyunits::default_declarators::*;
 use whippyunits::dimension_traits::define_generic_dimension;
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 use whippyunits::value;
 use whippyunits_core::Unit;
 
@@ -25,10 +25,10 @@ fn test_legal_addition_assign() {
 
 #[test]
 fn test_legal_subtraction() {
-    let result: unit!(m) = 5.0.meters() - 2.0.meters();
+    let result: qty!(m) = 5.0.meters() - 2.0.meters();
     assert_eq!(value!(result, m), 3.0);
 
-    let result: unit!(s) = 30.0.seconds() - 5.0.seconds();
+    let result: qty!(s) = 30.0.seconds() - 5.0.seconds();
     assert_eq!(value!(result, s), 25.0);
 }
 
@@ -58,7 +58,7 @@ fn test_scalar_from_radians() {
 #[test]
 fn test_radian_erasure() {
     let composite_with_radians = 5.0.radians() / 3.0.seconds();
-    let composite_with_radians_erased: unit!(1 / s) = composite_with_radians.into();
+    let composite_with_radians_erased: qty!(1 / s) = composite_with_radians.into();
     println!(
         "composite_with_radians_erased: {:?}",
         composite_with_radians_erased
@@ -68,7 +68,7 @@ fn test_radian_erasure() {
 
 #[test]
 fn test_dimensionless_to_scalar_conversion() {
-    let dimensionless: unit!(1) = quantity!(42.0, 1);
+    let dimensionless: qty!(1) = quantity!(42.0, 1);
     let scalar_f64: f64 = dimensionless.into();
     assert_eq!(scalar_f64, 42.0);
 
@@ -82,8 +82,11 @@ fn test_dimensionless_to_scalar_conversion() {
 }
 
 #[test]
+// 3.14159 is arbitrary radian test data whose exact round-trip we assert; it is
+// not meant to be `PI`, so `approx_constant` does not apply here.
+#[allow(clippy::approx_constant)]
 fn test_radian_erasure_with_scale() {
-    let radians_zero_scale: unit!(rad) = quantity!(3.14159, rad);
+    let radians_zero_scale: qty!(rad) = quantity!(3.14159, rad);
     let scalar_f64: f64 = radians_zero_scale.into();
     assert_eq!(scalar_f64, 3.14159);
 
@@ -99,43 +102,43 @@ fn test_radian_erasure_with_scale() {
 
 #[test]
 fn test_scalar_quantity_multiplication() {
-    let result: unit!(m) = 3.0 * 5.0.meters();
+    let result: qty!(m) = 3.0 * 5.0.meters();
     assert_eq!(value!(result, m), 15.0);
 
-    let result: unit!(m) = 5.0.meters() * 4.0;
+    let result: qty!(m) = 5.0.meters() * 4.0;
     assert_eq!(value!(result, m), 20.0);
 }
 
 #[test]
 fn test_scalar_quantity_division() {
-    let result: unit!(m) = 5.0.meters() / 2.0;
+    let result: qty!(m) = 5.0.meters() / 2.0;
     assert_eq!(value!(result, m), 2.5);
 
-    let result: unit!(1 / m) = 10.0 / 5.0.meters();
+    let result: qty!(1 / m) = 10.0 / 5.0.meters();
     assert_eq!(value!(result, 1 / m), 2.0); // 10 / 5m = 2 m^-1
 }
 
 #[test]
 fn test_scalar_quantity_division_with_scale_exponents() {
     // Test that scale exponents are properly inverted in scalar division
-    let inverse_km: unit!(1 / km) = 10.0 / 5.0.kilometers();
+    let inverse_km: qty!(1 / km) = 10.0 / 5.0.kilometers();
     assert_eq!(value!(inverse_km, 1 / km), 2.0); // 10 / 5km = 2 km^-1
 
     // Test rescaling of inverse quantities to ensure scale exponents covary correctly
-    let inverse_m: unit!(1 / m) = rescale(inverse_km);
+    let inverse_m: qty!(1 / m) = rescale(inverse_km);
     assert_eq!(value!(inverse_m, 1 / m), 0.002); // 2 km^-1 = 0.002 m^-1 (since 1/km = 0.001/m)
 }
 
 #[test]
 fn test_quantity_scalar_multiplication() {
-    let result: unit!(m) = 5.0.meters() * 4.0;
+    let result: qty!(m) = 5.0.meters() * 4.0;
     assert_eq!(value!(result, m), 20.0);
 }
 
 #[test]
 fn test_quantity_scalar_division() {
-    let result: unit!(m) = 5.0.meters() / 2.0;
-    let result: unit!(m) = 5.0.meters() / 2.0;
+    let result: qty!(m) = 5.0.meters() / 2.0;
+    let result: qty!(m) = 5.0.meters() / 2.0;
     assert_eq!(value!(result, m), 2.5);
 }
 
@@ -419,17 +422,17 @@ fn test_i32_quantity_declarators() {
 
 #[test]
 fn test_unit_macro_with_different_types() {
-    let length_f64: unit!(m) = 5.0.meters();
+    let length_f64: qty!(m) = 5.0.meters();
     assert_eq!(value!(length_f64, m), 5.0f64);
 
-    let length_i32: unit!(m, i32) = 5.meters();
+    let length_i32: qty!(m, i32) = 5.meters();
     assert_eq!(value!(length_i32, m, i32), 5i32);
 
-    let area_i32: unit!(m ^ 2, i32) = 5.meters() * 10.meters();
+    let area_i32: qty!(m ^ 2, i32) = 5.meters() * 10.meters();
     assert_eq!(value!(area_i32, m ^ 2, i32), 50i32);
 
-    let _length_type_check: unit!(m, i32) = 5.meters();
-    let _area_type_check: unit!(m ^ 2, i32) = 5.meters() * 10.meters();
+    let _length_type_check: qty!(m, i32) = 5.meters();
+    let _area_type_check: qty!(m ^ 2, i32) = 5.meters() * 10.meters();
 }
 
 #[test]
@@ -447,84 +450,84 @@ fn test_temperature_declarators() {
 
 #[test]
 fn test_all_types_arithmetic_available() {
-    let length_f64: unit!(m, f64) = 5.0.meters();
-    let area_f64: unit!(m ^ 2, f64) = length_f64 * length_f64;
+    let length_f64: qty!(m, f64) = 5.0.meters();
+    let area_f64: qty!(m ^ 2, f64) = length_f64 * length_f64;
     assert_eq!(value!(area_f64, m ^ 2), 25.0f64);
 
-    let length_i32: unit!(m, i32) = 5i32.meters();
-    let area_i32: unit!(m ^ 2, i32) = length_i32 * length_i32;
+    let length_i32: qty!(m, i32) = 5i32.meters();
+    let area_i32: qty!(m ^ 2, i32) = length_i32 * length_i32;
     assert_eq!(value!(area_i32, m ^ 2, i32), 25i32);
 
-    let length_f32: unit!(m, f32) = quantity!(5.0, m, f32);
-    let area_f32: unit!(m ^ 2, f32) = length_f32 * length_f32;
+    let length_f32: qty!(m, f32) = quantity!(5.0, m, f32);
+    let area_f32: qty!(m ^ 2, f32) = length_f32 * length_f32;
     assert_eq!(value!(area_f32, m ^ 2, f32), 25.0f32);
 
-    let length_i8: unit!(m, i8) = quantity!(5, m, i8);
-    let area_i8: unit!(m ^ 2, i8) = length_i8 * length_i8;
+    let length_i8: qty!(m, i8) = quantity!(5, m, i8);
+    let area_i8: qty!(m ^ 2, i8) = length_i8 * length_i8;
     assert_eq!(value!(area_i8, m ^ 2, i8), 25i8);
 
-    let length_i16: unit!(m, i16) = quantity!(5, m, i16);
-    let area_i16: unit!(m ^ 2, i16) = length_i16 * length_i16;
+    let length_i16: qty!(m, i16) = quantity!(5, m, i16);
+    let area_i16: qty!(m ^ 2, i16) = length_i16 * length_i16;
     assert_eq!(value!(area_i16, m ^ 2, i16), 25i16);
 
-    let length_i64: unit!(m, i64) = quantity!(5, m, i64);
-    let area_i64: unit!(m ^ 2, i64) = length_i64 * length_i64;
+    let length_i64: qty!(m, i64) = quantity!(5, m, i64);
+    let area_i64: qty!(m ^ 2, i64) = length_i64 * length_i64;
     assert_eq!(value!(area_i64, m ^ 2, i64), 25i64);
 
-    let length_i128: unit!(m, i128) = quantity!(5, m, i128);
-    let area_i128: unit!(m ^ 2, i128) = length_i128 * length_i128;
+    let length_i128: qty!(m, i128) = quantity!(5, m, i128);
+    let area_i128: qty!(m ^ 2, i128) = length_i128 * length_i128;
     assert_eq!(value!(area_i128, m ^ 2, i128), 25i128);
 
-    let length_u8: unit!(m, u8) = quantity!(5, m, u8);
-    let area_u8: unit!(m ^ 2, u8) = length_u8 * length_u8;
+    let length_u8: qty!(m, u8) = quantity!(5, m, u8);
+    let area_u8: qty!(m ^ 2, u8) = length_u8 * length_u8;
     assert_eq!(value!(area_u8, m ^ 2, u8), 25u8);
 
-    let length_u16: unit!(m, u16) = quantity!(5, m, u16);
-    let area_u16: unit!(m ^ 2, u16) = length_u16 * length_u16;
+    let length_u16: qty!(m, u16) = quantity!(5, m, u16);
+    let area_u16: qty!(m ^ 2, u16) = length_u16 * length_u16;
     assert_eq!(value!(area_u16, m ^ 2, u16), 25u16);
 
-    let length_u32: unit!(m, u32) = quantity!(5, m, u32);
-    let area_u32: unit!(m ^ 2, u32) = length_u32 * length_u32;
+    let length_u32: qty!(m, u32) = quantity!(5, m, u32);
+    let area_u32: qty!(m ^ 2, u32) = length_u32 * length_u32;
     assert_eq!(value!(area_u32, m ^ 2, u32), 25u32);
 
-    let length_u64: unit!(m, u64) = quantity!(5, m, u64);
-    let area_u64: unit!(m ^ 2, u64) = length_u64 * length_u64;
+    let length_u64: qty!(m, u64) = quantity!(5, m, u64);
+    let area_u64: qty!(m ^ 2, u64) = length_u64 * length_u64;
     assert_eq!(value!(area_u64, m ^ 2, u64), 25u64);
 
-    let length_u128: unit!(m, u128) = quantity!(5, m, u128);
-    let area_u128: unit!(m ^ 2, u128) = length_u128 * length_u128;
+    let length_u128: qty!(m, u128) = quantity!(5, m, u128);
+    let area_u128: qty!(m ^ 2, u128) = length_u128 * length_u128;
     assert_eq!(value!(area_u128, m ^ 2, u128), 25u128);
 }
 
 #[test]
 fn test_all_types_with_quantity_macro() {
-    let length_f32: unit!(m, f32) = quantity!(5.0, m, f32);
-    let length_f64: unit!(m, f64) = quantity!(5.0, m, f64);
+    let length_f32: qty!(m, f32) = quantity!(5.0, m, f32);
+    let length_f64: qty!(m, f64) = quantity!(5.0, m, f64);
 
-    let length_i8: unit!(m, i8) = quantity!(5, m, i8);
-    let length_i16: unit!(m, i16) = quantity!(5, m, i16);
-    let length_i32: unit!(m, i32) = quantity!(5, m, i32);
-    let length_i64: unit!(m, i64) = quantity!(5, m, i64);
-    let length_i128: unit!(m, i128) = quantity!(5, m, i128);
+    let length_i8: qty!(m, i8) = quantity!(5, m, i8);
+    let length_i16: qty!(m, i16) = quantity!(5, m, i16);
+    let length_i32: qty!(m, i32) = quantity!(5, m, i32);
+    let length_i64: qty!(m, i64) = quantity!(5, m, i64);
+    let length_i128: qty!(m, i128) = quantity!(5, m, i128);
 
-    let length_u8: unit!(m, u8) = quantity!(5, m, u8);
-    let length_u16: unit!(m, u16) = quantity!(5, m, u16);
-    let length_u32: unit!(m, u32) = quantity!(5, m, u32);
-    let length_u64: unit!(m, u64) = quantity!(5, m, u64);
-    let length_u128: unit!(m, u128) = quantity!(5, m, u128);
+    let length_u8: qty!(m, u8) = quantity!(5, m, u8);
+    let length_u16: qty!(m, u16) = quantity!(5, m, u16);
+    let length_u32: qty!(m, u32) = quantity!(5, m, u32);
+    let length_u64: qty!(m, u64) = quantity!(5, m, u64);
+    let length_u128: qty!(m, u128) = quantity!(5, m, u128);
 
-    let area_f32: unit!(m ^ 2, f32) = length_f32 * length_f32;
-    let area_f64: unit!(m ^ 2, f64) = length_f64 * length_f64;
-    let area_i8: unit!(m ^ 2, i8) = length_i8 * length_i8;
-    let area_i16: unit!(m ^ 2, i16) = length_i16 * length_i16;
-    let area_i32: unit!(m ^ 2, i32) = length_i32 * length_i32;
-    let area_i64: unit!(m ^ 2, i64) = length_i64 * length_i64;
-    let area_i128: unit!(m ^ 2, i128) = length_i128 * length_i128;
-    let area_u8: unit!(m ^ 2, u8) = length_u8 * length_u8;
-    let area_u16: unit!(m ^ 2, u16) = length_u16 * length_u16;
-    let area_u32: unit!(m ^ 2, u32) = length_u32 * length_u32;
-    let area_u64: unit!(m ^ 2, u64) = length_u64 * length_u64;
-    let area_u128: unit!(m ^ 2, u128) = length_u128 * length_u128;
+    let area_f32: qty!(m ^ 2, f32) = length_f32 * length_f32;
+    let area_f64: qty!(m ^ 2, f64) = length_f64 * length_f64;
+    let area_i8: qty!(m ^ 2, i8) = length_i8 * length_i8;
+    let area_i16: qty!(m ^ 2, i16) = length_i16 * length_i16;
+    let area_i32: qty!(m ^ 2, i32) = length_i32 * length_i32;
+    let area_i64: qty!(m ^ 2, i64) = length_i64 * length_i64;
+    let area_i128: qty!(m ^ 2, i128) = length_i128 * length_i128;
+    let area_u8: qty!(m ^ 2, u8) = length_u8 * length_u8;
+    let area_u16: qty!(m ^ 2, u16) = length_u16 * length_u16;
+    let area_u32: qty!(m ^ 2, u32) = length_u32 * length_u32;
+    let area_u64: qty!(m ^ 2, u64) = length_u64 * length_u64;
+    let area_u128: qty!(m ^ 2, u128) = length_u128 * length_u128;
 
     assert_eq!(value!(area_f32, m ^ 2, f32), 25.0f32);
     assert_eq!(value!(area_f64, m ^ 2), 25.0f64);
@@ -539,15 +542,15 @@ fn test_all_types_with_quantity_macro() {
     assert_eq!(value!(area_u64, m ^ 2, u64), 25u64);
     assert_eq!(value!(area_u128, m ^ 2, u128), 25u128);
 
-    let mass_f32: unit!(kg, f32) = quantity!(2.0, kg, f32);
-    let mass_f64: unit!(kg, f64) = quantity!(2.0, kg, f64);
-    let mass_i32: unit!(kg, i32) = quantity!(2, kg, i32);
-    let mass_u32: unit!(kg, u32) = quantity!(2, kg, u32);
+    let mass_f32: qty!(kg, f32) = quantity!(2.0, kg, f32);
+    let mass_f64: qty!(kg, f64) = quantity!(2.0, kg, f64);
+    let mass_i32: qty!(kg, i32) = quantity!(2, kg, i32);
+    let mass_u32: qty!(kg, u32) = quantity!(2, kg, u32);
 
-    let force_f32: unit!(N, f32) = mass_f32 * quantity!(9.81, m / s ^ 2, f32);
-    let force_f64: unit!(N, f64) = mass_f64 * quantity!(9.81, m / s ^ 2, f64);
-    let force_i32: unit!(N, i32) = mass_i32 * quantity!(9, m / s ^ 2, i32);
-    let force_u32: unit!(N, u32) = mass_u32 * quantity!(9, m / s ^ 2, u32);
+    let force_f32: qty!(N, f32) = mass_f32 * quantity!(9.81, m / s ^ 2, f32);
+    let force_f64: qty!(N, f64) = mass_f64 * quantity!(9.81, m / s ^ 2, f64);
+    let force_i32: qty!(N, i32) = mass_i32 * quantity!(9, m / s ^ 2, i32);
+    let force_u32: qty!(N, u32) = mass_u32 * quantity!(9, m / s ^ 2, u32);
 
     assert!((value!(force_f32, N, f32) - 19.62f32).abs() < 0.01f32);
     assert!((value!(force_f64, N) - 19.62f64).abs() < 0.01f64);
@@ -586,48 +589,48 @@ fn test_remainder_integer_types() {
     let result = 7.meters() % 3.meters();
     assert_eq!(value!(result, m, i32), 1);
 
-    let result: unit!(m, u32) = quantity!(7, m, u32) % quantity!(3, m, u32);
+    let result: qty!(m, u32) = quantity!(7, m, u32) % quantity!(3, m, u32);
     assert_eq!(value!(result, m, u32), 1);
 }
 
 #[test]
 fn test_prefixed_aggregate_quantities() {
-    let energy_kj: unit!(kJ) = quantity!(1.0, kJ);
-    let energy_mj: unit!(MJ) = quantity!(1.0, MJ);
-    let energy_gj: unit!(GJ) = quantity!(1.0, GJ);
+    let energy_kj: qty!(kJ) = quantity!(1.0, kJ);
+    let energy_mj: qty!(MJ) = quantity!(1.0, MJ);
+    let energy_gj: qty!(GJ) = quantity!(1.0, GJ);
 
-    let power_kw: unit!(kW) = quantity!(1.0, kW);
-    let power_mw: unit!(MW) = quantity!(1.0, MW);
-    let power_gw: unit!(GW) = quantity!(1.0, GW);
+    let power_kw: qty!(kW) = quantity!(1.0, kW);
+    let power_mw: qty!(MW) = quantity!(1.0, MW);
+    let power_gw: qty!(GW) = quantity!(1.0, GW);
 
-    let force_kn: unit!(kN) = quantity!(1.0, kN);
-    let force_mn: unit!(MN) = quantity!(1.0, MN);
+    let force_kn: qty!(kN) = quantity!(1.0, kN);
+    let force_mn: qty!(MN) = quantity!(1.0, MN);
 
-    let pressure_kpa: unit!(kPa) = quantity!(1.0, kPa);
-    let pressure_mpa: unit!(MPa) = quantity!(1.0, MPa);
+    let pressure_kpa: qty!(kPa) = quantity!(1.0, kPa);
+    let pressure_mpa: qty!(MPa) = quantity!(1.0, MPa);
 
     let time_seconds = quantity!(1.0, s);
-    let energy_from_power: unit!(kJ) = power_kw * time_seconds; // kW * s = kJ
+    let energy_from_power: qty!(kJ) = power_kw * time_seconds; // kW * s = kJ
 
     let mass_kg = quantity!(1.0, kg);
     let acceleration = quantity!(9.81, m / s ^ 2);
-    let force_from_mass: unit!(N) = mass_kg * acceleration;
+    let force_from_mass: qty!(N) = mass_kg * acceleration;
 
     let area_m2 = quantity!(1.0, m ^ 2);
-    let pressure_from_force: unit!(kPa) = force_kn / area_m2; // kN / m² = kPa
+    let pressure_from_force: qty!(kPa) = force_kn / area_m2; // kN / m² = kPa
 
-    let energy_j: unit!(J) = quantity!(1000.0, J);
-    let energy_kj_2: unit!(kJ) = quantity!(1.0, kJ);
+    let energy_j: qty!(J) = quantity!(1000.0, J);
+    let energy_kj_2: qty!(kJ) = quantity!(1.0, kJ);
 
     assert_eq!(value!(energy_j, J), 1000.0);
     assert_eq!(value!(energy_kj_2, kJ), 1.0);
 
-    let power_w: unit!(W) = quantity!(1000.0, W);
-    let power_kw_2: unit!(kW) = quantity!(1.0, kW);
+    let power_w: qty!(W) = quantity!(1000.0, W);
+    let power_kw_2: qty!(kW) = quantity!(1.0, kW);
 
     assert_eq!(value!(power_w, W), 1000.0);
     assert_eq!(value!(power_kw_2, kW), 1.0);
 
-    let kilowatt_hour: unit!(kWh) = quantity!(1.0, kW * h);
+    let kilowatt_hour: qty!(kWh) = quantity!(1.0, kW * h);
     assert_eq!(value!(kilowatt_hour, kW * h), 1.0);
 }

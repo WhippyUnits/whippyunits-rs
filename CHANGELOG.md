@@ -5,7 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0]
+
+### Added
+
+- **`whippyalgebra`** — a new companion crate (`0.1.0`) providing zero-cost,
+  unit-safe linear algebra
+  - `nalgebra` module: newtypes over [nalgebra](https://docs.rs/nalgebra):
+    - `MixedUnitMatrix`, where entry `(i, j)` carries the factored unit
+      `RowDims[i] / ColDims[j]` (keeping matrix product, transpose, determinant,
+      and inverse dimensionally coherent), and `UniformUnitMatrix`, where every
+      entry shares a single unit
+    - the `dims!`, `mixed_unit_matrix!`, and `uniform_unit_matrix!` declarative
+      macros, and the `generic_matrix`/`generic_block` attribute macros for
+      writing shape- and unit-generic code
+    - unit-checked wrappers over nalgebra's decompositions (LU, full-pivot LU, QR,
+      column-pivot QR, SVD, Cholesky, eigen, Schur, bidiagonal, Hessenberg, UDU,
+      and their generalized variants)
+    - gated behind the default `nalgebra` feature; disable it to depend only on
+      the backend-agnostic unit machinery
+- Public `Unit<Scale, Dimension>` type: the value-free dimensional signature
+  (scale + dimension, with no storage type, brand, or value) used for type-level
+  unit reasoning, e.g. the per-entry units of a unit-safe matrix.
+- `qty!` macro: builds a concrete `Quantity` *type* from a unit expression
+  (previously `unit!`).
+- `bytemuck` support: `Quantity` is now `#[repr(transparent)]` over its storage
+  type `T` and implements `Pod`, `Zeroable`, and `TransparentWrapper<T>`.
+
+### Changed
+
+- **BREAKING**: `Quantity` now takes a single inner `Unit` parameter —
+  `Quantity<Unit<Scale, Dimension>, T = f64, Brand = ()>` — instead of carrying
+  scale and dimension as separate parameters (`Quantity<Scale, Dimension, T,
+  Brand>`). Code that spells out `Quantity`'s type parameters directly must wrap
+  the scale/dimension pair in `Unit<…>`.
+- **BREAKING**: the `unit!` macro now expands to a bare `Unit<Scale, Dimension>`
+  type rather than a `Quantity` type. Use the new `qty!` macro to build a
+  `Quantity` type from a unit expression, and `quantity!` to build a value.
+
+### Removed
+
+- **BREAKING**: the `cge` feature flag (and its nightly `generic_const_exprs`
+  code path) has been removed. The typenum-based polyfill — supporting exponents
+  in the range -200 to 200 — is now the only backend. If/when CGA is stabilized,
+  a full-`i16`-range implementation will be reintroduced.
 
 ## [0.2.6] - 2026-07-13
 

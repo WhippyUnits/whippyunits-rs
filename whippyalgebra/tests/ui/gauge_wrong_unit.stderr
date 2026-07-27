@@ -1,0 +1,17 @@
+error[E0277]: the gauge tag does not reproduce the uniform block's entry unit
+  --> tests/ui/gauge_wrong_unit.rs:18:16
+   |
+18 |     let _bad = g.gauge::<dims![m, m], dims![m]>();
+   |                ^ this row/column gauge is inconsistent with the block's unit
+   |
+   = help: the trait `GaugeReproduces<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>, _T<-1>>>>` is not implemented for `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>`
+   = note: A uniform block carries a single entry unit `U`. Placing it as a mixed block over `<RowDims, ColDims>` requires both lists to be uniform and their entry-unit quotient to equal `U`: `Uniform(RowDims) / Uniform(ColDims) == U`.
+   = note: Fix: choose row/column dimension lists whose quotient is the block's unit — any common scale shared by both is free, and that is the gauge.
+note: required by a bound in `uniform::construction::<impl UniformUnitMatrix<U, Matrix<T, R, C, S>, Brand>>::gauge`
+  --> src/nalgebra/uniform/construction.rs
+   |
+   |     pub fn gauge<RowDims, ColDims>(
+   |            ----- required by a bound in this associated function
+...
+   |         DivUnit<Uniform<RowDims>, Uniform<ColDims>>: GaugeReproduces<U>,
+   |                                                      ^^^^^^^^^^^^^^^^^^ required by this bound in `uniform::construction::<impl UniformUnitMatrix<U, Matrix<T, R, C, S>, Brand>>::gauge`

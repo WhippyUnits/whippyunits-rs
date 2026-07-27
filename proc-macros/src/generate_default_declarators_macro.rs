@@ -235,7 +235,7 @@ impl DefaultDeclaratorsInput {
                 let storage_scale_name = if let Some(first_unit) = filtered_units.first() {
                     self.get_storage_scale_name_for_affine_unit(first_unit, dimension)
                 } else {
-                    self.get_storage_scale_name_for_dimension(&dimension.name)
+                    self.get_storage_scale_name_for_dimension(dimension.name)
                 };
                 let storage_scale_ident = syn::parse_str::<Ident>(&storage_scale_name).unwrap();
 
@@ -329,7 +329,7 @@ impl DefaultDeclaratorsInput {
         ) = Self::extract_dimension_exponents(dimension);
 
         // Generate trait name from dimension name
-        let trait_name = Self::generate_metric_trait_name(&dimension.name);
+        let trait_name = Self::generate_metric_trait_name(dimension.name);
         let trait_ident = syn::parse_str::<Ident>(&trait_name).unwrap();
 
         let mut scale_definitions = Vec::new();
@@ -378,13 +378,13 @@ impl DefaultDeclaratorsInput {
                     let (p2, p3, p5, pi) = if dimension.name == "Mass" {
                         // Gram has inherent -3 scale factor, so we add the prefix scale factor
                         let total_scale = -3 + prefix.factor_log10();
-                        (total_scale as i16, 0i16, total_scale as i16, 0i16)
+                        (total_scale, 0i16, total_scale, 0i16)
                     } else {
                         // Other units have 0 inherent scale factor
                         (
-                            prefix.factor_log10() as i16,
+                            prefix.factor_log10(),
                             0i16,
-                            prefix.factor_log10() as i16,
+                            prefix.factor_log10(),
                             0i16,
                         )
                     };
@@ -739,7 +739,7 @@ impl DefaultDeclaratorsInput {
             whippyunits_core::CapitalizedFmt(storage_unit.name).to_string()
         } else {
             // Fallback to the dimension-based lookup (this should rarely happen)
-            self.get_storage_scale_name_for_dimension(&dimension.name)
+            self.get_storage_scale_name_for_dimension(dimension.name)
         }
     }
 
@@ -901,8 +901,8 @@ impl DefaultDeclaratorsInput {
             trait_methods.push(quote! {
                 #[doc = #doc_string]
                 fn #fn_name_ident(self) -> crate::quantity::Quantity<
-                    crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
-                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>,
+                    crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
+                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>,
                     T,
                 >;
             });
@@ -910,33 +910,33 @@ impl DefaultDeclaratorsInput {
             // Generate f64 implementation
             impl_f64_methods.push(quote! {
                 fn #fn_name_ident(self) -> crate::quantity::Quantity<
-                    crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
-                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>,
+                    crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
+                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>,
                     f64,
                 > {
-                    crate::quantity::Quantity::<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>, f64>::new(self * #conversion_factor)
+                    crate::quantity::Quantity::<crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>, f64>::new(self * #conversion_factor)
                 }
             });
 
             // Generate i32 implementation
             impl_i32_methods.push(quote! {
                 fn #fn_name_ident(self) -> crate::quantity::Quantity<
-                    crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
-                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>,
+                    crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
+                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>,
                     i32,
                 > {
-                    crate::quantity::Quantity::<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>, i32>::new((self as f64 * #conversion_factor) as i32)
+                    crate::quantity::Quantity::<crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>, i32>::new((self as f64 * #conversion_factor) as i32)
                 }
             });
 
             // Generate i64 implementation
             impl_i64_methods.push(quote! {
                 fn #fn_name_ident(self) -> crate::quantity::Quantity<
-                    crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
-                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>,
+                    crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>,
+                    crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>,
                     i64,
                 > {
-                    crate::quantity::Quantity::<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>, i64>::new((self as f64 * #conversion_factor) as i64)
+                    crate::quantity::Quantity::<crate::quantity::Unit<crate::quantity::Scale<crate::quantity::_2<#p2>, crate::quantity::_3<#p3>, crate::quantity::_5<#p5>, crate::quantity::_Pi<#pi>>, crate::quantity::Dimension<crate::quantity::_M<#mass_exp>, crate::quantity::_L<#length_exp>, crate::quantity::_T<#time_exp>, crate::quantity::_I<#current_exp>, crate::quantity::_Θ<#temperature_exp>, crate::quantity::_N<#amount_exp>, crate::quantity::_J<#luminosity_exp>, crate::quantity::_A<#angle_exp>>>, i64>::new((self as f64 * #conversion_factor) as i64)
                 }
             });
 

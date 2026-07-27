@@ -9,6 +9,12 @@ pub struct RustcPrettyPrinter {
     display_config: DisplayConfig,
 }
 
+impl Default for RustcPrettyPrinter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RustcPrettyPrinter {
     pub fn new() -> Self {
         Self::with_config(DisplayConfig::default())
@@ -57,7 +63,13 @@ impl RustcPrettyPrinter {
 
     /// Check if a line contains whippyunits types using the same logic as LSP proxy
     fn contains_whippyunits_types(&self, line: &str) -> bool {
-        // Check for the basic Quantity pattern first
+        // Bare `Unit<Scale…>` types (e.g. from whippyalgebra) carry no
+        // `Quantity` text, so detect the inner unit wrapper directly.
+        if line.contains("Unit<Scale") {
+            return true;
+        }
+
+        // Check for the basic Quantity pattern
         if !line.contains("Quantity") {
             return false;
         }
@@ -88,10 +100,10 @@ mod tests {
         let rustc_output = r#"error[E0308]: mismatched types
  --> src/main.rs:5:9
   |
-5 |     let x: Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64> = 5.0;
-  |         ^   expected `Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64>`, found `{float}`
+5 |     let x: Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64> = 5.0;
+  |         ^   expected `Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64>`, found `{float}`
   |
-  = note: expected struct `Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64>`
+  = note: expected struct `Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64>`
              found type `{float}`"#;
 
         let processed = printer.process_rustc_output(rustc_output).unwrap();
@@ -106,7 +118,7 @@ mod tests {
     fn test_line_processing() {
         let mut printer = RustcPrettyPrinter::new();
 
-        let line = "    let x: Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64> = 5.0;";
+        let line = "    let x: Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64> = 5.0;";
         let processed = printer.process_line(line).unwrap();
 
         println!("Original: {}", line);
@@ -122,7 +134,7 @@ mod tests {
         let printer = RustcPrettyPrinter::new();
 
         // Test new format
-        assert!(printer.contains_whippyunits_types("Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64>"));
+        assert!(printer.contains_whippyunits_types("Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64>"));
 
         // Test old format
         assert!(printer.contains_whippyunits_types("Quantity<0, 9223372036854775807, 1, 0, 0, 9223372036854775807, 9223372036854775807, 9223372036854775807>"));

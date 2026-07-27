@@ -11,11 +11,8 @@
 //! 3. Compound units can erase radian component while retaining other dimensions
 //! 4. Works with any numeric type
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 use whippyunits::value;
 
 #[culit::culit(whippyunits::default_declarators::literals)]
@@ -70,7 +67,7 @@ fn main() {
     // Example: Angular velocity (rad/s) → frequency (1/s)
     let angular_velocity = 5.0rad / 3.0s;
     println!("   Angular velocity: {}", angular_velocity);
-    let frequency: unit!(1 / s) = angular_velocity.into();
+    let frequency: qty!(1 / s) = angular_velocity.into();
     println!("   After erasure: {}", frequency);
     assert_eq!(value!(frequency, 1 / s), 5.0 / 3.0);
 
@@ -78,7 +75,7 @@ fn main() {
     // The radian component is erased, leaving m/s²
     let curvature = quantity!(1.0, rad / m);
     let velocity = quantity!(1.0, m / s);
-    let centripetal_acceleration: unit!(m / s ^ 2) = (curvature * velocity * velocity).into();
+    let centripetal_acceleration: qty!(m / s ^ 2) = (curvature * velocity * velocity).into();
     println!("   Curvature: {}", curvature);
     println!("   Velocity: {}", velocity);
     println!("   Centripetal acceleration: {}", centripetal_acceleration);

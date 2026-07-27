@@ -59,9 +59,13 @@
 //! The `Brand` type parameter allows for finer granularity of unit safety guarantees; quantities can only
 //! participate in arithmetic operations with other quantities of the same brand.  This is useful for, e.g.,
 //! distinguishing between quantities in different coordinate systems or with different physical meanings,
-//! whose intermixture would be nonsensical even if dimensionally-coherent.  By default quantities *do* have
+//! whose intermixture would be nonsensical even if dimensionally-coherent.  By default quantities do have
 //! a brand (of the unit type `()`), so custom-branded quantities will not interoperate with default-declared
 //! quantities unless explicitly converted.
+
+// Re-exported so that internal macros (which reference `Unit` unqualified)
+// and downstream `use whippyunits::quantity::*;` see the unit wrapper.
+pub use crate::unit::Unit;
 
 /// Trait for `as`-cast conversions between primitive numeric types.
 ///
@@ -102,12 +106,21 @@ macro_rules! impl_lossy_from {
 }
 
 impl_lossy_from![
-    f32, f64,
-    i8, i16, i32, i64, i128,
-    u8, u16, u32, u64, u128,
-    isize, usize,
+    f32,
+    f64,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    isize,
+    usize,
     f32 = f64,
-
     f32 = i8,
     f32 = i16,
     f32 = i32,
@@ -120,7 +133,6 @@ impl_lossy_from![
     f32 = u128,
     f32 = isize,
     f32 = usize,
-
     f64 = i8,
     f64 = i16,
     f64 = i32,
@@ -133,7 +145,6 @@ impl_lossy_from![
     f64 = u128,
     f64 = isize,
     f64 = usize,
-
     i8 = i16,
     i8 = i32,
     i8 = i64,
@@ -145,7 +156,6 @@ impl_lossy_from![
     i8 = u128,
     i8 = isize,
     i8 = usize,
-
     i16 = i32,
     i16 = i64,
     i16 = i128,
@@ -156,7 +166,6 @@ impl_lossy_from![
     i16 = u128,
     i16 = isize,
     i16 = usize,
-
     i32 = i64,
     i32 = i128,
     i32 = u8,
@@ -166,7 +175,6 @@ impl_lossy_from![
     i32 = u128,
     i32 = isize,
     i32 = usize,
-
     i64 = i128,
     i64 = u8,
     i64 = u16,
@@ -175,7 +183,6 @@ impl_lossy_from![
     i64 = u128,
     i64 = isize,
     i64 = usize,
-
     i128 = u8,
     i128 = u16,
     i128 = u32,
@@ -183,32 +190,26 @@ impl_lossy_from![
     i128 = u128,
     i128 = isize,
     i128 = usize,
-
     u8 = u16,
     u8 = u32,
     u8 = u64,
     u8 = u128,
     u8 = isize,
     u8 = usize,
-
     u16 = u32,
     u16 = u64,
     u16 = u128,
     u16 = isize,
     u16 = usize,
-
     u32 = u64,
     u32 = u128,
     u32 = isize,
     u32 = usize,
-
     u64 = u128,
     u64 = isize,
     u64 = usize,
-
     u128 = isize,
     u128 = usize,
-
     isize = usize,
 ];
 
@@ -342,15 +343,15 @@ pub struct Dimension<
 /// # }
 /// ```
 ///
-/// If you want a concrete Quantity type *as a type*, use the [unit!](crate::unit!) macro:
+/// If you want a concrete Quantity type as a type, use the [unit!](crate::unit!) macro:
 ///
 /// ```rust
 /// # fn main() {
-/// # use whippyunits::unit;
+/// # use whippyunits::qty;
 /// # use whippyunits::quantity;
 /// let distance = quantity!(1.0, m);
 /// // explicit type assertion provides additional unit safety
-/// let area: unit!(m^2) = distance * distance;
+/// let area: qty!(m^2) = distance * distance;
 /// # }
 /// ```
 ///
@@ -362,7 +363,7 @@ pub struct Dimension<
 ///
 /// Quantity is a zero-cost wrapper type - at runtime, your binary will only contain
 /// the underlying numeric type.  Accordingly, the dimensionality of any quantity represented by
-/// a Quantity type must be known at compile time.  Whippyunits does *not* support unit-safe operations
+/// a Quantity type must be known at compile time.  Whippyunits does not support unit-safe operations
 /// on values whose dimensionality is only known at runtime, e.g. as deserialized from a JSON string,
 /// unless all possible runtime dimensionalities of the quantity are each given their own statically-declared
 /// code branch.
@@ -370,11 +371,17 @@ pub struct Dimension<
 /// The `Brand` type parameter allows for finer granularity of unit safety guarantees; quantities can only
 /// participate in arithmetic operations with other quantities of the same brand.  This is useful for, e.g.,
 /// distinguishing between quantities in different coordinate systems or with different physical meanings,
-/// whose intermixture would be nonsensical even if dimensionally-coherent.  By default quantities *do* have
+/// whose intermixture would be nonsensical even if dimensionally-coherent.  By default quantities do have
 /// a brand (of the unit type `()`), so custom-branded quantities will not interoperate with default-declared
 /// quantities unless explicitly converted.
 #[derive(Clone, PartialEq)]
-pub struct Quantity<Scale, Dimension, T = f64, Brand = ()> {
+// A `Quantity` canonically erases to its storage type `T` at runtime: it holds
+// exactly one non-zero-sized field (the value) plus zero-sized phantom markers.
+// `#[repr(transparent)]` guarantees identical layout with `T` and enforces the
+// single-field invariant (a second non-ZST field would fail to compile), which
+// is what makes `from_ref`/`from_mut` sound.
+#[repr(transparent)]
+pub struct Quantity<U, T = f64, Brand = ()> {
     /// The raw numeric value of this quantity.
     ///
     /// **⚠️ WARNING: This property is NOT unit-safe!**
@@ -412,16 +419,86 @@ pub struct Quantity<Scale, Dimension, T = f64, Brand = ()> {
     /// # }
     /// ```
     pub unsafe_value: T,
-    _phantom: core::marker::PhantomData<fn() -> (Scale, Dimension, Brand)>,
+    _phantom: core::marker::PhantomData<fn() -> (U, Brand)>,
 }
 
-impl<Scale, Dimension, T, Brand> Copy for Quantity<Scale, Dimension, T, Brand>
+impl<U, T, Brand> Copy for Quantity<U, T, Brand>
 where
-    Scale: Clone,
-    Dimension: Clone,
+    U: Clone,
     T: Copy,
     Brand: Clone,
 {
+}
+
+// `Quantity` is a `#[repr(transparent)]` newtype over its storage type `T` (plus
+// zero-sized phantom markers), so bytemuck's transparent-wrapper and plain-old-
+// data traits apply. Implementing them centralizes the layout-safety argument
+// that used to live in hand-rolled pointer casts and, more importantly, unlocks
+// zero-copy slice views (`&[T]` <-> `&[Quantity]`) used by container
+// integrations such as whippyalgebra.
+use bytemuck::TransparentWrapper;
+
+// SAFETY: `Quantity<U, T, Brand>` is `#[repr(transparent)]` with exactly one
+// non-ZST field of type `T`; every other field is a trivially-constructable ZST
+// (`PhantomData`). It therefore has an identical representation to `T` and adds
+// no alignment requirement, which is exactly the `TransparentWrapper<T>`
+// contract.
+unsafe impl<U, T, Brand> TransparentWrapper<T> for Quantity<U, T, Brand> {}
+
+// SAFETY: the all-zero bit pattern is a valid `Quantity` exactly when it is a
+// valid `T` (`T: Zeroable`); the phantom field is a ZST and contributes nothing.
+unsafe impl<U, T: bytemuck::Zeroable, Brand> bytemuck::Zeroable for Quantity<U, T, Brand> {}
+
+// SAFETY: with `T: Pod`, `Quantity` is `#[repr(transparent)]` over `T` with no
+// padding and no invalid bit patterns (the phantom markers are ZSTs). The
+// `Copy`/`'static` supertrait obligations of `Pod` are discharged by the bounds:
+// `U`/`Brand` are phantom and contribute no bytes, so only their `Clone`/`'static`
+// requirements (needed for `Quantity: Copy` and `Pod: 'static`) are imposed.
+unsafe impl<U, T, Brand> bytemuck::Pod for Quantity<U, T, Brand>
+where
+    U: Clone + 'static,
+    T: bytemuck::Pod,
+    Brand: Clone + 'static,
+{
+}
+
+impl<U, T, Brand> Quantity<U, T, Brand> {
+    /// Reinterprets a reference to a raw value as a reference to a `Quantity`.
+    ///
+    /// Sound because `Quantity` is `#[repr(transparent)]` over its value field,
+    /// so `Quantity<U, T, Brand>` and `T` share a layout. Delegates to
+    /// [`bytemuck::TransparentWrapper::wrap_ref`], so the reinterpretation is
+    /// guarded by bytemuck's transparent-wrapper contract rather than a
+    /// hand-rolled `unsafe` cast. Lets a value stored inside another container
+    /// (for example an element of a matrix) be viewed as a unit-safe quantity
+    /// without copying.
+    pub fn from_ref(value: &T) -> &Self {
+        Self::wrap_ref(value)
+    }
+
+    /// Reinterprets a mutable reference to a raw value as a mutable reference to
+    /// a `Quantity`.
+    ///
+    /// See [`from_ref`](Self::from_ref) for why this is sound. This enables
+    /// unit-safe in-place mutation of a value stored inside another container.
+    pub fn from_mut(value: &mut T) -> &mut Self {
+        Self::wrap_mut(value)
+    }
+
+    /// Reinterprets a slice of raw values as a slice of `Quantity` in place —
+    /// the zero-copy bulk analog of [`from_ref`](Self::from_ref).
+    ///
+    /// Useful for viewing a contiguous numeric buffer (e.g. a matrix column or
+    /// an nalgebra storage slice) as unit-safe quantities without copying.
+    pub fn from_slice(values: &[T]) -> &[Self] {
+        Self::wrap_slice(values)
+    }
+
+    /// Mutable counterpart to [`from_slice`](Self::from_slice), enabling
+    /// unit-safe in-place mutation of a whole buffer.
+    pub fn from_mut_slice(values: &mut [T]) -> &mut [Self] {
+        Self::wrap_slice_mut(values)
+    }
 }
 
 impl<P2, P3, P5, PI> Clone for Scale<P2, P3, P5, PI> {
@@ -531,16 +608,18 @@ impl<
     Brand,
 >
     Quantity<
-        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-        Dimension<
-            _M<MASS_EXPONENT>,
-            _L<LENGTH_EXPONENT>,
-            _T<TIME_EXPONENT>,
-            _I<CURRENT_EXPONENT>,
-            _Θ<TEMPERATURE_EXPONENT>,
-            _N<AMOUNT_EXPONENT>,
-            _J<LUMINOSITY_EXPONENT>,
-            _A<ANGLE_EXPONENT>,
+        Unit<
+            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<
+                _M<MASS_EXPONENT>,
+                _L<LENGTH_EXPONENT>,
+                _T<TIME_EXPONENT>,
+                _I<CURRENT_EXPONENT>,
+                _Θ<TEMPERATURE_EXPONENT>,
+                _N<AMOUNT_EXPONENT>,
+                _J<LUMINOSITY_EXPONENT>,
+                _A<ANGLE_EXPONENT>,
+            >,
         >,
         T,
         Brand,
@@ -582,16 +661,18 @@ impl<
     pub fn lossless_into<Dest: From<T>>(
         self,
     ) -> Quantity<
-        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-        Dimension<
-            _M<MASS_EXPONENT>,
-            _L<LENGTH_EXPONENT>,
-            _T<TIME_EXPONENT>,
-            _I<CURRENT_EXPONENT>,
-            _Θ<TEMPERATURE_EXPONENT>,
-            _N<AMOUNT_EXPONENT>,
-            _J<LUMINOSITY_EXPONENT>,
-            _A<ANGLE_EXPONENT>,
+        Unit<
+            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<
+                _M<MASS_EXPONENT>,
+                _L<LENGTH_EXPONENT>,
+                _T<TIME_EXPONENT>,
+                _I<CURRENT_EXPONENT>,
+                _Θ<TEMPERATURE_EXPONENT>,
+                _N<AMOUNT_EXPONENT>,
+                _J<LUMINOSITY_EXPONENT>,
+                _A<ANGLE_EXPONENT>,
+            >,
         >,
         Dest,
         Brand,
@@ -633,16 +714,18 @@ impl<
     pub fn lossy_into<Dest: LossyFrom<T>>(
         self,
     ) -> Quantity<
-        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-        Dimension<
-            _M<MASS_EXPONENT>,
-            _L<LENGTH_EXPONENT>,
-            _T<TIME_EXPONENT>,
-            _I<CURRENT_EXPONENT>,
-            _Θ<TEMPERATURE_EXPONENT>,
-            _N<AMOUNT_EXPONENT>,
-            _J<LUMINOSITY_EXPONENT>,
-            _A<ANGLE_EXPONENT>,
+        Unit<
+            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<
+                _M<MASS_EXPONENT>,
+                _L<LENGTH_EXPONENT>,
+                _T<TIME_EXPONENT>,
+                _I<CURRENT_EXPONENT>,
+                _Θ<TEMPERATURE_EXPONENT>,
+                _N<AMOUNT_EXPONENT>,
+                _J<LUMINOSITY_EXPONENT>,
+                _A<ANGLE_EXPONENT>,
+            >,
         >,
         Dest,
         Brand,
@@ -685,7 +768,7 @@ impl<
     /// # }
     /// ```
     ///
-    /// Dimensionally-incompatible units will print an error message, but will *not* panic:
+    /// Dimensionally-incompatible units will print an error message, but will not panic:
     ///
     /// ```rust
     /// # fn main() {
@@ -841,11 +924,10 @@ impl<
         }
 
         // Fallback to dimension symbol if no unit found
-        if let Some(dimension) = Dimension::find_dimension_by_exponents(source_dimensions) {
-            if let Some(symbol) = dimension.symbol {
+        if let Some(dimension) = Dimension::find_dimension_by_exponents(source_dimensions)
+            && let Some(symbol) = dimension.symbol {
                 return symbol;
             }
-        }
 
         // Final fallback
         "unknown unit"
@@ -923,16 +1005,20 @@ macro_rules! define_from_dimensionless_cross_type {
         impl<const SCALE_P2: i16, const SCALE_P3: i16, const SCALE_P5: i16, const SCALE_PI: i16>
             From<
                 Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    >,
                     $source_type,
                 >,
             > for $target_type
         {
             fn from(
                 other: Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    >,
                     $source_type,
                 >,
             ) -> $target_type {
@@ -942,8 +1028,10 @@ macro_rules! define_from_dimensionless_cross_type {
                 } else {
                     // Convert to f64 quantity first, then apply rescale logic
                     let f64_quantity = Quantity::<
-                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                        Unit<
+                            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                            Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                        >,
                         f64,
                     >::new(other.unsafe_value as f64);
                     (crate::api::rescale_f64::<
@@ -997,16 +1085,20 @@ macro_rules! define_from_dimensionless {
         impl<const SCALE_P2: i16, const SCALE_P3: i16, const SCALE_P5: i16, const SCALE_PI: i16>
             From<
                 Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    >,
                     $type,
                 >,
             > for $type
         {
             fn from(
                 other: Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>,
+                    >,
                     $type,
                 >,
             ) -> $type {
@@ -1085,16 +1177,20 @@ macro_rules! define_from_for_radians_with_scale_cross_type {
         impl<const SCALE_P2: i16, const SCALE_P3: i16, const SCALE_P5: i16, const SCALE_PI: i16>
             From<
                 Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    >,
                     $source_type,
                 >,
             > for $target_type
         {
             fn from(
                 other: Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    >,
                     $source_type,
                 >,
             ) -> $target_type {
@@ -1104,8 +1200,19 @@ macro_rules! define_from_for_radians_with_scale_cross_type {
                 } else {
                     // Convert to f64 quantity first, then apply rescale logic
                     let f64_quantity = Quantity::<
-                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                        Unit<
+                            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                            Dimension<
+                                _M<0>,
+                                _L<0>,
+                                _T<0>,
+                                _I<0>,
+                                _Θ<0>,
+                                _N<0>,
+                                _J<0>,
+                                _A<$exponent>,
+                            >,
+                        >,
                         f64,
                     >::new(other.unsafe_value as f64);
                     (crate::api::rescale_f64::<
@@ -1164,16 +1271,20 @@ macro_rules! define_from_for_radians_with_scale {
         impl<const SCALE_P2: i16, const SCALE_P3: i16, const SCALE_P5: i16, const SCALE_PI: i16>
             From<
                 Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    >,
                     $type,
                 >,
             > for $type
         {
             fn from(
                 other: Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    Unit<
+                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<0>, _L<0>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<$exponent>>,
+                    >,
                     $type,
                 >,
             ) -> $type {
@@ -1223,7 +1334,7 @@ macro_rules! define_from_for_radians {
             /// # fn main() {
             /// # use whippyunits::default_declarators::*;
             /// # use whippyunits::quantity;
-            /// # use whippyunits::unit;
+            /// # use whippyunits::qty;
             /// # use whippyunits::value;
             ///
             /// // Curvature in radians per meter
@@ -1231,7 +1342,7 @@ macro_rules! define_from_for_radians {
             /// let velocity = quantity!(1.0, m / s);
             ///
             /// // Erase radian component for centripetal acceleration calculation
-            /// let centripetal_acceleration: unit!(m / s^2) = (curvature * velocity * velocity).into();
+            /// let centripetal_acceleration: qty!(m / s^2) = (curvature * velocity * velocity).into();
             /// assert_eq!(value!(centripetal_acceleration, m / s^2), 1.0);
             /// # }
             /// ```
@@ -1250,21 +1361,21 @@ macro_rules! define_from_for_radians {
                 >
                 From<
                     Quantity<
-                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                        Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<$exponent>>,
+                        Unit<Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<$exponent>>>,
                         $type,
                     >,
                 >
                 for Quantity<
-                    Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<0>>,
+                    Unit<Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<0>>>,
                     $type,
                 >
             {
                 fn from(
                     other: Quantity<
-                        Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-                        Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<$exponent>>,
+                        Unit<Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+                        Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<$exponent>>>,
                         $type,
                     >,
                 ) -> Self {
@@ -1286,16 +1397,16 @@ whippyunits_proc_macros::generate_all_radian_erasures!(9);
 macro_rules! quantity_type {
     () => {
         Quantity<
-            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-            Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+            Unit<Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
             T,
             Brand
         >
     };
     ($T:ty) => {
         Quantity<
-            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
-            Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+            Unit<Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
             $T,
             Brand
         >

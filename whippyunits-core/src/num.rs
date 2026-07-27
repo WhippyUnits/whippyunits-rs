@@ -1,13 +1,11 @@
 //! Polyfill for generic const expressions.
 //!
 //! Because [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560)
-//! is an untable feature (along with being incomplete), this polyfill exists to
+//! is an unstable feature (along with being incomplete), this polyfill exists to
 //! allow a small subset of those operations on stable.
 //!
 //! Because dimensional analysis usually has small dimension exponents we constrain
-//! this polyfill to working with input integers in the range -200 to 200. If the `cge`
-//! feature is enabled then `generic_const_exprs` is used to provide implementations for
-//! all `i16` integers.
+//! this polyfill to working with input integers in the range -200 to 200.
 
 /// Const generic with type level math operations.
 ///
@@ -16,7 +14,7 @@
 /// - Subtraction: `<A as Sub<B>>::Output`
 /// - Negation: `<X as Neg>::Output`
 ///
-/// Without the `cge` feature the operations are limited to inputs in the range -200 to 200.
+/// The operations are limited to inputs in the range -200 to 200.
 ///
 /// The [`Num`] trait can be used to constrain a generic to only this type.
 pub struct N<const X: i16>;
@@ -39,13 +37,11 @@ mod num_seal {
     impl<const X: i16> Sealed for super::N<X> {}
 }
 
-#[cfg(not(feature = "cge"))]
 #[doc(hidden)]
 pub trait __AsTypenum {
     type Repr: typenum::Integer;
 }
 
-#[cfg(not(feature = "cge"))]
 #[doc(hidden)]
 pub trait __IntoNum {
     type Num;
@@ -53,46 +49,7 @@ pub trait __IntoNum {
     fn into_num() -> Self::Num;
 }
 
-#[cfg(feature = "cge")]
-mod cge {
-    use super::N;
-
-    impl<const A: i16, const B: i16> core::ops::Add<N<B>> for N<A>
-    where
-        [(); { A + B } as usize]:,
-    {
-        type Output = N<{ A + B }>;
-
-        fn add(self, _: N<B>) -> Self::Output {
-            N
-        }
-    }
-
-    impl<const A: i16, const B: i16> core::ops::Sub<N<B>> for N<A>
-    where
-        [(); { A - B } as usize]:,
-    {
-        type Output = N<{ A - B }>;
-
-        fn sub(self, _: N<B>) -> Self::Output {
-            N
-        }
-    }
-
-    impl<const X: i16> core::ops::Neg for N<X>
-    where
-        [(); { -X } as usize]:,
-    {
-        type Output = N<{ -X }>;
-
-        fn neg(self) -> Self::Output {
-            N
-        }
-    }
-}
-
-// Stable polyfill backed by typenum.
-#[cfg(not(feature = "cge"))]
+// Polyfill backed by typenum.
 mod stable {
     use super::{__AsTypenum, __IntoNum, N};
     use core::ops::{Add, Neg, Sub};
@@ -1373,6 +1330,92 @@ mod stable {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Type-level equality
+// ---------------------------------------------------------------------------
+//
+// The equality counterpart to the `Add`/`Sub`/`Neg` arithmetic above: comparing
+// two `N` numerals at the type level, yielding a [`typenum::Bit`] (`B1` if
+// equal, else `B0`). Like the arithmetic it is backed by typenum (via the same
+// `N ↔ typenum::Integer` bridge).
+//
+// A `Bit` result — rather than a mere `where A == B` bound — is what lets a
+// caller *branch* on equality at the type level (e.g. deciding whether a list
+// of units is uniform), which a bound alone cannot express.
+
+/// Type-level equality of two [`N`] numerals: [`Output`](NumEq::Output) is a
+/// [`typenum::Bit`], `B1` iff the two numerals are equal.
+pub trait NumEq<Rhs> {
+    /// The [`typenum::Bit`] `B1` (equal) or `B0` (unequal).
+    type Output;
+}
+
+impl<const A: i16, const B: i16> NumEq<N<B>> for N<A>
+where
+    N<A>: __AsTypenum,
+    N<B>: __AsTypenum,
+    <N<A> as __AsTypenum>::Repr: typenum::IsEqual<<N<B> as __AsTypenum>::Repr>,
+{
+    type Output =
+        <<N<A> as __AsTypenum>::Repr as typenum::IsEqual<<N<B> as __AsTypenum>::Repr>>::Output;
+}
+
+// ---------------------------------------------------------------------------
+// Even-only halving (numeral square root)
+// ---------------------------------------------------------------------------
+//
+// The multiplicative dual of the `Add`/`Sub` arithmetic: halving a numeral,
+// which — unlike them — is a *partial* operation. It is defined exactly when the
+// numeral is even, so a `where N<X>: Halve` bound is a compile-time *proof* that
+// `X` is even, and `<N<X> as Halve>::Output` is `N<X/2>`. That is precisely what
+// a unit square root needs (halve every exponent), which exists iff every
+// exponent is even. This is backed by typenum's `PartialDiv` (whose own
+// `Rem == Z0` obligation is the evenness gate).
+
+/// Type-level halving of an [`N`] numeral, defined only for even numerals.
+///
+/// [`Output`](Halve::Output) is `N<X/2>` when `X` is even. When `X` is odd there
+/// is simply no impl, so a bound `N<X>: Halve` doubles as a compile-time witness
+/// that `X` is even — the exact precondition for a unit square root.
+pub trait Halve {
+    /// Half of the numeral (`N<X/2>`); only exists when `X` is even.
+    type Output;
+}
+
+impl<const X: i16> Halve for N<X>
+where
+    N<X>: __AsTypenum,
+    <N<X> as __AsTypenum>::Repr: typenum::PartialDiv<typenum::P2>,
+    <<N<X> as __AsTypenum>::Repr as typenum::PartialDiv<typenum::P2>>::Output: __IntoNum,
+{
+    type Output =
+        <<<N<X> as __AsTypenum>::Repr as typenum::PartialDiv<typenum::P2>>::Output as __IntoNum>::Num;
+}
+
+/// AND-fold of a cons-list of [`typenum::Bit`]s, written as nested 2-tuples
+/// terminated by `()`. [`Output`](BitAll::Output) is `B1` iff every element is
+/// `B1` (the empty list is vacuously `B1`).
+///
+/// This is the combinator that reduces a sequence of per-component
+/// [`NumEq`] results to a single verdict — e.g. "all twelve exponents of two
+/// units agree" — without spelling out an eleven-deep `BitAnd` chain by hand.
+pub trait BitAll {
+    /// The AND of every bit in the list.
+    type Output;
+}
+
+impl BitAll for () {
+    type Output = typenum::B1;
+}
+
+impl<H, T> BitAll for (H, T)
+where
+    T: BitAll,
+    H: core::ops::BitAnd<<T as BitAll>::Output>,
+{
+    type Output = <H as core::ops::BitAnd<<T as BitAll>::Output>>::Output;
+}
+
 #[cfg(test)]
 mod tests {
     use core::ops::{Add, Neg, Sub};
@@ -1434,5 +1477,30 @@ mod tests {
         assert::<N<1>, N<-1>>();
         assert::<N<200>, N<-200>>();
         assert::<N<-200>, N<200>>();
+    }
+
+    #[test]
+    fn num_eq_yields_bit() {
+        fn assert<A: NumEq<B, Output = O>, B, O>() {}
+
+        assert::<N<0>, N<0>, typenum::B1>();
+        assert::<N<7>, N<7>, typenum::B1>();
+        assert::<N<-5>, N<-5>, typenum::B1>();
+        assert::<N<3>, N<4>, typenum::B0>();
+        assert::<N<-1>, N<1>, typenum::B0>();
+        assert::<N<200>, N<200>, typenum::B1>();
+        assert::<N<200>, N<-200>, typenum::B0>();
+    }
+
+    #[test]
+    fn bit_all_folds() {
+        fn assert<L: BitAll<Output = O>, O>() {}
+        use typenum::{B0, B1};
+
+        assert::<(), B1>();
+        assert::<(B1, ()), B1>();
+        assert::<(B1, (B1, (B1, ()))), B1>();
+        assert::<(B1, (B0, (B1, ()))), B0>();
+        assert::<(B0, ()), B0>();
     }
 }

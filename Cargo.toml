@@ -5,10 +5,12 @@ members = [
     "whippyunits-core",
     "whippyunits-pretty",
     "lsp-proxy",
+    "whippyalgebra",
+    "whippyalgebra-macros",
 ]
 
 [workspace.package]
-version = "0.2.6"
+version = "0.3.0"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -16,7 +18,7 @@ repository = "https://github.com/WhippyUnits/whippyunits-rs"
 
 [package]
 name = "whippyunits"
-version = "0.2.6"
+version = "0.3.0"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -31,8 +33,9 @@ quote = { version = "1.0", optional = true }
 proc-macro2 = { version = "1.0", optional = true }
 syn = { version = "2.0", features = ["full"], optional = true }
 libm = "0.2"
-whippyunits-proc-macros = { path = "proc-macros", version = "0.2.6" }
-whippyunits-core = { path = "whippyunits-core", version = "0.2.1" }
+bytemuck = "1"
+whippyunits-proc-macros = { path = "proc-macros", version = "0.3.0" }
+whippyunits-core = { path = "whippyunits-core", version = "0.3.0" }
 num-traits = "0.2"
 culit = "0.6.0"
 op_result = "0.5.8"
@@ -41,6 +44,7 @@ serde_json = { version = "1.0", default-features = false, features = ["alloc"], 
 
 [dev-dependencies]
 trybuild = "1.0"
+typenum = "1"
 
 
 [features]
@@ -48,7 +52,6 @@ default = ["std", "serde"]
 std = ["alloc"]
 alloc = []
 serde = ["alloc", "dep:serde", "dep:serde_json", "dep:syn", "dep:proc-macro2", "dep:quote"]
-cge = ["whippyunits-core/cge"]
 
 [lib]
 name = "whippyunits"

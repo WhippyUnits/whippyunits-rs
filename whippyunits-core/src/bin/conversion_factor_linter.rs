@@ -68,7 +68,7 @@ fn is_conversion_factor_valid(factor: f64) -> bool {
     }
 
     // Check if factor is within the allowed range
-    factor >= MIN_CONVERSION_FACTOR && factor <= MAX_CONVERSION_FACTOR
+    (MIN_CONVERSION_FACTOR..=MAX_CONVERSION_FACTOR).contains(&factor)
 }
 
 /// Check if a conversion factor is exactly representable using the prime factor scheme

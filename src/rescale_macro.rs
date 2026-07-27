@@ -48,92 +48,92 @@
 macro_rules! rescale {
     // f64 (default) - two arguments
     ($quantity:expr, $unit:expr) => {{
-        type TargetQuantity = $crate::unit!($unit, f64);
+        type TargetQuantity = $crate::qty!($unit, f64);
         let result: TargetQuantity = $crate::api::rescale($quantity);
-        result as $crate::unit!($unit, f64)
+        result as $crate::qty!($unit, f64)
     }};
     // f64 (explicit) - three arguments with f64
     ($quantity:expr, $unit:expr, f64) => {{
-        type TargetQuantity = $crate::unit!($unit, f64);
+        type TargetQuantity = $crate::qty!($unit, f64);
         let result: TargetQuantity = $crate::api::rescale($quantity);
-        result as $crate::unit!($unit, f64)
+        result as $crate::qty!($unit, f64)
     }};
     // f32
     ($quantity:expr, $unit:expr, f32) => {{
-        type TargetQuantity = $crate::unit!($unit, f32);
+        type TargetQuantity = $crate::qty!($unit, f32);
         let result: TargetQuantity = $crate::api::rescale_f32($quantity);
-        result as $crate::unit!($unit, f32)
+        result as $crate::qty!($unit, f32)
     }};
     // i8
     ($quantity:expr, $unit:expr, i8) => {{
-        type TargetQuantity = $crate::unit!($unit, i8);
+        type TargetQuantity = $crate::qty!($unit, i8);
         let result: TargetQuantity = $crate::api::rescale_i8($quantity);
-        result as $crate::unit!($unit, i8)
+        result as $crate::qty!($unit, i8)
     }};
     // i16
     ($quantity:expr, $unit:expr, i16) => {{
-        type TargetQuantity = $crate::unit!($unit, i16);
+        type TargetQuantity = $crate::qty!($unit, i16);
         let result: TargetQuantity = $crate::api::rescale_i16($quantity);
-        result as $crate::unit!($unit, i16)
+        result as $crate::qty!($unit, i16)
     }};
     // i32
     ($quantity:expr, $unit:expr, i32) => {{
-        type TargetQuantity = $crate::unit!($unit, i32);
+        type TargetQuantity = $crate::qty!($unit, i32);
         let result: TargetQuantity = $crate::api::rescale_i32($quantity);
-        result as $crate::unit!($unit, i32)
+        result as $crate::qty!($unit, i32)
     }};
     // i64
     ($quantity:expr, $unit:expr, i64) => {{
-        type TargetQuantity = $crate::unit!($unit, i64);
+        type TargetQuantity = $crate::qty!($unit, i64);
         let result: TargetQuantity = $crate::api::rescale_i64($quantity);
-        result as $crate::unit!($unit, i64)
+        result as $crate::qty!($unit, i64)
     }};
     // i128
     ($quantity:expr, $unit:expr, i128) => {{
-        type TargetQuantity = $crate::unit!($unit, i128);
+        type TargetQuantity = $crate::qty!($unit, i128);
         let result: TargetQuantity = $crate::api::rescale_i128($quantity);
-        result as $crate::unit!($unit, i128)
+        result as $crate::qty!($unit, i128)
     }};
     // u8
     ($quantity:expr, $unit:expr, u8) => {{
-        type TargetQuantity = $crate::unit!($unit, u8);
+        type TargetQuantity = $crate::qty!($unit, u8);
         let result: TargetQuantity = $crate::api::rescale_u8($quantity);
-        result as $crate::unit!($unit, u8)
+        result as $crate::qty!($unit, u8)
     }};
     // u16
     ($quantity:expr, $unit:expr, u16) => {{
-        type TargetQuantity = $crate::unit!($unit, u16);
+        type TargetQuantity = $crate::qty!($unit, u16);
         let result: TargetQuantity = $crate::api::rescale_u16($quantity);
-        result as $crate::unit!($unit, u16)
+        result as $crate::qty!($unit, u16)
     }};
     // u32
     ($quantity:expr, $unit:expr, u32) => {{
-        type TargetQuantity = $crate::unit!($unit, u32);
+        type TargetQuantity = $crate::qty!($unit, u32);
         let result: TargetQuantity = $crate::api::rescale_u32($quantity);
-        result as $crate::unit!($unit, u32)
+        result as $crate::qty!($unit, u32)
     }};
     // u64
     ($quantity:expr, $unit:expr, u64) => {{
-        type TargetQuantity = $crate::unit!($unit, u64);
+        type TargetQuantity = $crate::qty!($unit, u64);
         let result: TargetQuantity = $crate::api::rescale_u64($quantity);
-        result as $crate::unit!($unit, u64)
+        result as $crate::qty!($unit, u64)
     }};
     // u128
     ($quantity:expr, $unit:expr, u128) => {{
-        type TargetQuantity = $crate::unit!($unit, u128);
+        type TargetQuantity = $crate::qty!($unit, u128);
         let result: TargetQuantity = $crate::api::rescale_u128($quantity);
-        result as $crate::unit!($unit, u128)
+        result as $crate::qty!($unit, u128)
     }};
     // isize
     ($quantity:expr, $unit:expr, isize) => {{
-        type TargetQuantity = $crate::unit!($unit, isize);
+        type TargetQuantity = $crate::qty!($unit, isize);
         let result: TargetQuantity = $crate::api::rescale_isize($quantity);
-        result as $crate::unit!($unit, isize)
+        result as $crate::qty!($unit, isize)
     }};
     // usize
     ($quantity:expr, $unit:expr, usize) => {{
-        type TargetQuantity = $crate::unit!($unit, usize);
+        type TargetQuantity = $crate::qty!($unit, usize);
         let result: TargetQuantity = $crate::api::rescale_usize($quantity);
-        result as $crate::unit!($unit, usize)
+        result as $crate::qty!($unit, usize)
     }};
 }

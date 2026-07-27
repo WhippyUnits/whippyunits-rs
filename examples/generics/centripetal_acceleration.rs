@@ -19,8 +19,8 @@
 use whippyunits::dimension_traits::define_generic_dimension;
 use whippyunits::op_result;
 use whippyunits::output;
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 
 // Define generic dimensions for the calculation
 // Velocity: length per time (L/T)
@@ -57,6 +57,9 @@ define_generic_dimension!(InverseRadius, 1 / L);
 /// # Returns
 /// Centripetal acceleration (L/T²) with angle dimension erased.  Preserves scale structure.
 #[op_result]
+// `#[op_result]` re-emits the inline generic bounds in the generated `where`
+// clause, which clippy reads as bounds defined in more than one place.
+#[allow(clippy::multiple_bound_locations)]
 pub fn centripetal_acceleration<V: Velocity, K: Curvature, A: Acceleration>(
     velocity: V,
     curvature: K,
@@ -96,6 +99,9 @@ where
 /// # Returns
 /// Centripetal acceleration (L/T²)
 #[op_result]
+// `#[op_result]` re-emits the inline generic bounds in the generated `where`
+// clause, which clippy reads as bounds defined in more than one place.
+#[allow(clippy::multiple_bound_locations)]
 pub fn centripetal_acceleration_inverse_radius<V: Velocity, K: InverseRadius, A: Acceleration>(
     velocity: V,
     inverse_radius: K,
@@ -113,19 +119,19 @@ fn main() {
     // Using radians
     let velocity = quantity!(10.0, m / s);
     let curvature = quantity!(10.0, rad / m);
-    let acceleration = centripetal_acceleration::<_, _, unit!(m / s2)>(velocity, curvature);
+    let acceleration = centripetal_acceleration::<_, _, qty!(m / s2)>(velocity, curvature);
     println!("Radians: {} at {} → {}", velocity, curvature, acceleration);
 
     // Using degrees
     let velocity = quantity!(10.0, m / s);
     let curvature = quantity!(10.0, deg / m);
-    let acceleration = centripetal_acceleration::<_, _, unit!(deg.m / rad.s2)>(velocity, curvature);
+    let acceleration = centripetal_acceleration::<_, _, qty!(deg.m / rad.s2)>(velocity, curvature);
     println!("Degrees: {} at {} → {}", velocity, curvature, acceleration);
 
     // Using rotations (revolutions)
     let velocity = quantity!(10.0, m / s);
     let curvature = quantity!(10.0, rot / m);
-    let acceleration = centripetal_acceleration::<_, _, unit!(rot.m / rad.s2)>(velocity, curvature);
+    let acceleration = centripetal_acceleration::<_, _, qty!(rot.m / rad.s2)>(velocity, curvature);
     println!(
         "Rotations: {} at {} → {}",
         velocity, curvature, acceleration
@@ -137,12 +143,12 @@ fn main() {
     // The function contract expects inverse radius (1/m), but we have
     // measured curvature with angular units (rad/m). We use `.into()` erasure
     // directly at the call site to convert rad/m → 1/m.
-    // 
+    //
     // Note: Compared to an implementation that uses proper curvature, this requires
     // an additional type annotation to specify the target type for the erasure.
     let velocity = quantity!(10.0, m / s);
     let measured_curvature = quantity!(10.0, rad / m);
-    let acceleration = centripetal_acceleration_inverse_radius::<_, unit!(1 / m), unit!(m / s2)>(
+    let acceleration = centripetal_acceleration_inverse_radius::<_, qty!(1 / m), qty!(m / s2)>(
         velocity,
         measured_curvature.into(),
     );
@@ -156,8 +162,8 @@ fn main() {
     let measured_curvature = quantity!(10.0, deg / m); // ≈ 1 rad/m
     let acceleration = centripetal_acceleration_inverse_radius::<
         _,
-        unit!(deg / rad.m),
-        unit!(deg.m / rad.s2),
+        qty!(deg / rad.m),
+        qty!(deg.m / rad.s2),
     >(velocity, measured_curvature.into());
     println!(
         "deg/m → 1/m via erasure: {} at {} → {}",

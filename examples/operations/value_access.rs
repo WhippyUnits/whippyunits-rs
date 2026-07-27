@@ -3,9 +3,6 @@
 //! This example demonstrates safe value access using the `value!` macro and
 //! explains the dangers of using `.unsafe_value` directly.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
 use whippyunits::quantity;
 use whippyunits::value;
 

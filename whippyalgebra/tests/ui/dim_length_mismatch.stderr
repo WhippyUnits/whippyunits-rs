@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: row count does not match RowDims length
+ --> src/nalgebra/matrix/construction.rs
+  |
+  | /             assert!(
+  | |                 RowDims::LEN == R::USIZE,
+  | |                 "row count does not match RowDims length"
+  | |             );
+  | |_____________^ evaluation of `whippyalgebra::nalgebra::matrix::construction::<impl whippyalgebra::nalgebra::MixedUnitMatrix<whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DNil>>>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DNil>>>, nalgebra::Matrix<f64, nalgebra::Const<6>, nalgebra::Const<3>, nalgebra::ArrayStorage<f64, 6, 3>>>>::new::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/nalgebra/matrix/construction.rs
+  |
+  | /         const {
+  | |             assert!(
+  | |                 RowDims::LEN == R::USIZE,
+  | |                 "row count does not match RowDims length"
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn whippyalgebra::nalgebra::matrix::construction::<impl whippyalgebra::nalgebra::MixedUnitMatrix<whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension<whippyunits::quantity::_M, whippyunits::quantity::_L<1>>>, whippyalgebra::DNil>>>>>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, whippyunits::quantity::Dimension>, whippyalgebra::DNil>>>, nalgebra::Matrix<f64, nalgebra::Const<6>, nalgebra::Const<3>, nalgebra::ArrayStorage<f64, 6, 3>>>>::new`
+  --> tests/ui/dim_length_mismatch.rs:18:16
+   |
+18 |     let _bad = Bad::new(M6x3::zeros());
+   |                ^^^^^^^^^^^^^^^^^^^^^^^

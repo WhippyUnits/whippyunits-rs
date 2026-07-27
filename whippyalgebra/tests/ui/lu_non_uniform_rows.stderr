@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<DCons<Unit<Scale, Dimension<_M, _L, _T<1>>>, DNil> as CollapseUniform>::Unit == Unit<Scale, Dimension<_M, _L<1>>>`
+  --> tests/ui/lu_non_uniform_rows.rs:17:18
+   |
+17 |     let _bad = a.lu();
+   |                  ^^ expected `1`, found `0`
+   |
+   = note: expected struct `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>, _T<0>, _I, _Θ, _N, _J, _A>>`
+              found struct `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<0>, _T<1>, _I, _Θ, _N, _J, _A>>`
+   = note: required for `DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DNil>>` to implement `CollapseUniform`
+note: required by a bound in `whippyalgebra::nalgebra::linalg::lu::<impl MixedUnitMatrix<RowDims, ColDims, Matrix<T, D, D, S>, Brand>>::lu`
+  --> src/nalgebra/linalg/lu.rs
+   |
+   |     pub fn lu(&self) -> LU<RowDims, ColDims, T, D, Brand>
+   |            -- required by a bound in this associated function
+   |     where
+   |         RowDims: CollapseUniform,
+   |                  ^^^^^^^^^^^^^^^ required by this bound in `whippyalgebra::nalgebra::linalg::lu::<impl MixedUnitMatrix<RowDims, ColDims, Matrix<T, D, D, S>, Brand>>::lu`

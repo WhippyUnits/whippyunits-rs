@@ -1,3 +1,5 @@
 [toolchain]
-channel = "stable"
+# Pinned to an exact stable so trybuild UI snapshots don't drift when the
+# host's stable toolchain is updated. Bump this and rebless snapshots together.
+channel = "1.90.0"
 components = ["rustfmt", "clippy"]

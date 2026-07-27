@@ -1,0 +1,11 @@
+error[E0502]: cannot borrow `m` as mutable because it is also borrowed as immutable
+  --> tests/ui/view_blocks_parent_mutation.rs:20:5
+   |
+15 |     let view = m.block_view::<0, 0, 1, 1>();
+   |                - immutable borrow occurs here
+...
+20 |     m.set_block::<0, 0, 1, 1, _>(&blk);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+...
+23 |     let _ = view.get::<0, 0>();
+   |             ---- immutable borrow later used here

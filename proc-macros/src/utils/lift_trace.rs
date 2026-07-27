@@ -222,7 +222,7 @@ impl<'a> QuoteGenerator<'a> {
             <whippyunits::Helper<{
                 #lift_trace_doc_shadows
                 0
-            }, whippyunits::unit!(#unit_symbol_ident, #storage_type, #brand_type)> as whippyunits::GetSecondGeneric>::Type
+            }, whippyunits::qty!(#unit_symbol_ident, #storage_type, #brand_type)> as whippyunits::GetSecondGeneric>::Type
         }
     }
 
@@ -234,7 +234,7 @@ impl<'a> QuoteGenerator<'a> {
             <whippyunits::Helper<{
                 #lift_trace_doc_shadows
                 0
-            }, whippyunits::unit!(#unit_expr_parsed, #storage_type, #brand_type)> as whippyunits::GetSecondGeneric>::Type
+            }, whippyunits::qty!(#unit_expr_parsed, #storage_type, #brand_type)> as whippyunits::GetSecondGeneric>::Type
         }
     }
 }
@@ -328,7 +328,7 @@ impl LocalContext {
         }
 
         // For compound units, check if any of their base units get transformed
-        return self.compound_unit_gets_transformed(dimensions);
+        self.compound_unit_gets_transformed(dimensions)
     }
 
     /// Check if a compound unit gets transformed in the local context
@@ -654,6 +654,11 @@ impl LocalContext {
     }
 
     /// Generate detailed transformation explanation
+    // Each SI dimension picks its display unit via the same `if transformed { .. }
+    // else { .. }` shape; only length currently differs (`m` -> `mm`). The other
+    // branches are identical placeholders kept parallel for the dimensions that
+    // may gain a local-context transform later, so `if_same_then_else` is expected.
+    #[allow(clippy::if_same_then_else)]
     pub fn generate_transformation_explanation(
         &self,
         unit_name: &str,
@@ -789,7 +794,7 @@ impl LocalContext {
         if scale_factor_diff != 0 {
             // Find which dimensions are being transformed
             if length_exp != 0 && self.unit_gets_transformed_in_local_context("m") {
-                lines.push(format!("       ↓ (length: m → mm, factor: 10^-3)"));
+                lines.push("       ↓ (length: m → mm, factor: 10^-3)".to_string());
                 if length_exp != 1 {
                     lines.push(format!(
                         "       ↓ (exponent: {}, total factor: 10^{})",
@@ -798,7 +803,7 @@ impl LocalContext {
                 }
             }
             if mass_exp != 0 && self.unit_gets_transformed_in_local_context("kg") {
-                lines.push(format!("       ↓ (mass: kg → g, factor: 10^3)"));
+                lines.push("       ↓ (mass: kg → g, factor: 10^3)".to_string());
                 if mass_exp != 1 {
                     lines.push(format!(
                         "       ↓ (exponent: {}, total factor: 10^{})",

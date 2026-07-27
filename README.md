@@ -1,17 +1,17 @@
 # WhippyUnits
 
-A zero-cost, pure rust units-of-measure library for applied computation.  Works on stable Rust by default, with optional support for nightly `generic_const_exprs` via the `cge` feature flag.
+A zero-cost, pure rust units-of-measure library for applied computation.  Works on stable Rust.
 
 ## Quick Start
 
 ```rust
-use whippyunits::{quantity, unit, value};
+use whippyunits::{quantity, qty, value};
 use whippyunits::api::rescale;
 
 let d1 = quantity!(1.0, m);
 let d2 = quantity!(500.0, mm);
 
-let sum: unit!(m) = d1 + rescale(d2);
+let sum: qty!(m) = d1 + rescale(d2);
 assert_eq!(value!(sum, m), 1.5);
 ```
 
@@ -259,7 +259,7 @@ let curvature = quantity!(1.0, rad / m);
 let velocity = quantity!(1.0, m / s);
 // but when we want to calculate centripetal acceleration by the typical formula, 
 // we need to erase the radian component:
-let centripetal_acceleration: unit!(m / s^2) = (curvature * velocity * velocity).into();
+let centripetal_acceleration: qty!(m / s^2) = (curvature * velocity * velocity).into();
 assert_eq!(value!(centripetal_acceleration, m / s^2), 1.0);
 ```
 
@@ -272,7 +272,7 @@ let curvature = quantity!(1.0, deg / m);
 let velocity = quantity!(1.0, m / s);
 // because degrees have a non-unity storage scale, 
 // we need to rescale to get the expected result:
-let centripetal_acceleration: unit!(m / s^2) = rescale((curvature * velocity * velocity).into());
+let centripetal_acceleration: qty!(m / s^2) = rescale((curvature * velocity * velocity).into());
 // 1 deg/m * (1 m/s)^2 = π/180 m/s^2
 assert_eq!(value!(centripetal_acceleration, m / s^2), std::f64::consts::PI / 180.0);
 ```
@@ -394,8 +394,8 @@ error[E0308]: mismatched types
 10 |     let _result = length + time;
    |                            ^^^^ expected `1`, found `0`
    |
-   = note: expected struct `Quantity<Scale, Dimension<_M, _L<1>, _T<0>, _I, _Θ, _N, _J, _A>>`
-              found struct `Quantity<Scale, Dimension<_M, _L<0>, _T<1>, _I, _Θ, _N, _J, _A>>`
+   = note: expected struct `Quantity<Unit<Scale, Dimension<_M, _L<1>, _T<0>, _I, _Θ, _N, _J, _A>>>`
+              found struct `Quantity<Unit<Scale, Dimension<_M, _L<0>, _T<1>, _I, _Θ, _N, _J, _A>>>`
 ```
 
 The tool converts complex generic type parameters into human-readable unit symbols, making error messages much clearer.
@@ -412,7 +412,7 @@ The `lsp-proxy/` directory contains a Language Server Protocol proxy that interc
         ---
         Raw:
 
-        result: Quantity<Scale, Dimension<_M<0>, _L<1>>>
+        result: Quantity<Unit<Scale, Dimension<_M<0>, _L<1>>>>
         ---
 
         size = 8, align = 0x8, no Drop
@@ -427,23 +427,14 @@ The `lsp-proxy/` directory contains a Language Server Protocol proxy that interc
     //          v inlay hint (like above)
     let distance: Quantity<m, f64> = 5.0mm;
     //          double-clicks into correct macro declaration syntax for the unit!
-    let distance: unit!(m) = 5.0mm;
+    let distance: qty!(m) = 5.0mm;
     ```
 
 See `lsp-proxy/README.md` for setup instructions.
 
 ## Requirements
 
-WhippyUnits works on **stable Rust** by default, using a typenum-based polyfill for compile-time dimensional arithmetic.
-
-To use nightly `generic_const_exprs` instead, enable the `cge` feature:
-
-```toml
-[dependencies]
-whippyunits = { version = "0.1", features = ["cge"] }
-```
-
-With the `cge` flag, exponents can span the full range of i16 integers.  Without it, exponents are limited to the range -200 to 200.
+WhippyUnits works on **stable Rust**, using a typenum-based polyfill for compile-time dimensional arithmetic. Dimension and scale exponents are limited to the range -200 to 200.
 
 ## Feature Flags
 
@@ -452,7 +443,6 @@ With the `cge` flag, exponents can span the full range of i16 integers.  Without
 | `std`   | Yes     | Enables standard library support (implies `alloc`) |
 | `alloc` | Yes     | Enables `Display`/`Debug` impls on `Quantity` (requires a global allocator) |
 | `serde` | Yes     | Enables serde `Serialize`/`Deserialize` impls, `from_json!`/`from_string!` macros, and the `.fmt()` display method (implies `alloc`) |
-| `cge`   | No      | Enables nightly `generic_const_exprs` (requires nightly toolchain) |
 
 ## `no_std` and `no_alloc` Support
 
@@ -461,15 +451,15 @@ WhippyUnits is fully `no_std` and `no_alloc` compatible. All core functionality 
 ```toml
 # no_std + no_alloc (stack-only, no Display/Debug)
 [dependencies]
-whippyunits = { version = "0.1", default-features = false }
+whippyunits = { version = "0.3", default-features = false }
 
 # no_std + alloc (adds Display/Debug impls)
 [dependencies]
-whippyunits = { version = "0.1", default-features = false, features = ["alloc"] }
+whippyunits = { version = "0.3", default-features = false, features = ["alloc"] }
 
 # no_std + alloc + serde
 [dependencies]
-whippyunits = { version = "0.1", default-features = false, features = ["serde"] }
+whippyunits = { version = "0.3", default-features = false, features = ["serde"] }
 ```
 
 **What you lose without `alloc`:**
@@ -485,11 +475,7 @@ whippyunits = { version = "0.1", default-features = false, features = ["serde"] 
 ### Usage
 
 ```bash
-# Standard cargo commands (uses stable by default)
 cargo check
 cargo build
 cargo test
-
-# With nightly generic_const_exprs support
-cargo check --features cge
 ```

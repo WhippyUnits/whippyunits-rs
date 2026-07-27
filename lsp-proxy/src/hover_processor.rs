@@ -21,11 +21,7 @@ impl HoverProcessor {
 
     /// Extract hover content from LSP result
     pub fn extract_hover_content(&self, result: &Value) -> Option<HoverContent> {
-        if let Ok(hover) = serde_json::from_value::<HoverContent>(result.clone()) {
-            Some(hover)
-        } else {
-            None
-        }
+        serde_json::from_value::<HoverContent>(result.clone()).ok()
     }
 
     /// Improve hover content by formatting whippyunits types
@@ -267,9 +263,9 @@ impl HoverProcessor {
                     let simplified = format!("impl {} for {}", trait_name, trait_type);
 
                     // Strip the where clause but keep the function definition
-                    if where_pos.is_some() {
+                    if let Some(where_pos) = where_pos {
                         // Include everything from the trait type to the where clause (which includes the function)
-                        let where_start = for_start + where_pos.unwrap();
+                        let where_start = for_start + where_pos;
                         let after = &text[type_end..where_start];
                         return format!("{}{}{}", &text[..impl_start], simplified, after);
                     } else {
@@ -292,11 +288,7 @@ impl HoverProcessor {
 
             let trait_start = if let Some(start) = text[impl_start..].find(&trait_pattern1) {
                 Some(impl_start + start)
-            } else if let Some(start) = text[impl_start..].find(&trait_pattern2) {
-                Some(impl_start + start)
-            } else {
-                None
-            };
+            } else { text[impl_start..].find(&trait_pattern2).map(|start| impl_start + start) };
 
             if let Some(trait_start) = trait_start {
                 // Find the end of the trait type
@@ -382,9 +374,9 @@ impl HoverProcessor {
                 let simplified = format!("impl {}<Quantity<...>> for {}", trait_name, trait_type);
 
                 // Strip the where clause but keep the function definition
-                if where_pos.is_some() {
+                if let Some(where_pos) = where_pos {
                     // Include everything from the trait type to the where clause (which includes the function)
-                    let where_start = trait_start + where_pos.unwrap();
+                    let where_start = trait_start + where_pos;
                     let after = &text[type_end..where_start];
                     return format!("{}{}{}", &text[..impl_start], simplified, after);
                 } else {

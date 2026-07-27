@@ -1,0 +1,7 @@
+error: generic_matrix(uniform, ..): a uniform matrix has no dimension lists — drop the sublist and write bare sizes, e.g. `uniform, rows(N), cols(M)`
+  --> tests/ui/generic_matrix_uniform_sublist_rejected.rs:12:1
+   |
+12 | #[generic_matrix(uniform, rows(N, State), cols(M))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `generic_matrix` (in Nightly builds, run with -Z macro-backtrace for more info)
