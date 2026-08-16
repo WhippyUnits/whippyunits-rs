@@ -12,11 +12,15 @@
 //! The filter implements: y[n] = α * x[n] + (1 - α) * y[n-1]
 //! where α is the filter coefficient (0 < α ≤ 1)
 
+// `x - x` is the unit-safe way to obtain a correctly-typed zero for a generic
+// quantity `T`, which is exactly the pattern clippy's `eq_op` lint flags.
+#![allow(clippy::eq_op)]
+
 use core::ops::{Add, Mul, Sub};
 use whippyunits::dimension_traits::{Time, define_generic_dimension};
 use whippyunits::op_result;
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 
 /// First-order IIR low-pass filter (exponential moving average)
 ///
@@ -189,8 +193,8 @@ fn main() {
 
     println!("  Raw signal (base + noise):");
     for i in 0..10 {
-        let signal: unit!(m) = generator.next_sample(base);
-        let filtered: unit!(m) = filter.filter(signal);
+        let signal: qty!(m) = generator.next_sample(base);
+        let filtered: qty!(m) = filter.filter(signal);
         println!("    Sample {}: {} -> {}", i, signal, filtered);
     }
 
@@ -205,8 +209,8 @@ fn main() {
 
     println!("  Raw signal (base + noise):");
     for i in 0..10 {
-        let signal: unit!(m / s) = generator.next_sample(base);
-        let filtered: unit!(m / s) = filter.filter(signal);
+        let signal: qty!(m / s) = generator.next_sample(base);
+        let filtered: qty!(m / s) = filter.filter(signal);
         println!("    Sample {}: {} -> {}", i, signal, filtered);
     }
 
@@ -221,8 +225,8 @@ fn main() {
 
     println!("  Raw signal (base + noise):");
     for i in 0..10 {
-        let signal: unit!(mm) = generator.next_sample(base);
-        let filtered: unit!(mm) = filter.filter(signal);
+        let signal: qty!(mm) = generator.next_sample(base);
+        let filtered: qty!(mm) = filter.filter(signal);
         println!("    Sample {}: {} -> {}", i, signal, filtered);
     }
 

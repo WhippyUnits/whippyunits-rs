@@ -1,4 +1,4 @@
-use whippyunits::{value, quantity, rescale};
+use whippyunits::{quantity, rescale, value};
 
 // ---- f32 <=> f64 ----
 
@@ -40,9 +40,9 @@ fn test_rescaled() {
 
 #[test]
 fn test_preserves_compound_dimension() {
-    let v_f64 = quantity!(9.8, m/s^2);
+    let v_f64 = quantity!(9.8, m / s ^ 2);
     let v_f32 = v_f64.lossy_into::<f32>();
-    assert!((value!(v_f32, m/s^2, f32) - 9.8_f32).abs() < 1e-4);
+    assert!((value!(v_f32, m / s ^ 2, f32) - 9.8_f32).abs() < 1e-4);
 }
 
 #[test]
@@ -145,9 +145,9 @@ fn test_u16_to_i128() {
 
 #[test]
 fn test_cross_type_compound_dimension() {
-    let v = quantity!(10, m/s^2, i32);
+    let v = quantity!(10, m / s ^ 2, i32);
     let v_f64 = v.lossy_into::<f64>();
-    assert!((value!(v_f64, m/s^2) - 10.0).abs() < 1e-10);
+    assert!((value!(v_f64, m / s ^ 2) - 10.0).abs() < 1e-10);
 }
 
 // ---- cross-type chain ----

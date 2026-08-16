@@ -18,7 +18,7 @@ fn is_primitive_dimension(exponents: Vec<i16>) -> bool {
     let non_zero_count = exponents.iter().filter(|&&exp| exp != 0).count();
 
     // A primitive dimension has exactly one non-zero exponent, and it must be 1
-    non_zero_count == 1 && exponents.iter().any(|&exp| exp == 1)
+    non_zero_count == 1 && exponents.contains(&1)
 }
 
 /// Format configuration for unit symbol generation
@@ -390,7 +390,7 @@ pub fn generate_prefixed_systematic_unit(
                             base_unit_name,
                             get_unicode_exponent(exponent)
                         );
-                        return result;
+                        result
                     } else {
                         // Fallback to original behavior
                         format!("{}{}", prefix, base_unit)
@@ -445,12 +445,17 @@ fn format_float_with_sig_figs(value: f64, sig_figs: usize) -> String {
 
     let abs_value = value.abs();
     let magnitude = abs_value.log10().floor() as i32;
-    let scale_factor = 10_f64.powi(sig_figs as i32 - 1 - magnitude as i32);
+    let scale_factor = 10_f64.powi(sig_figs as i32 - 1 - magnitude);
 
     let rounded = (value * scale_factor).round() / scale_factor;
 
     // Format with appropriate precision
-    let formatted = if magnitude >= 0 {
+    
+
+    // Note: The ~ symbol should only be added when the storage scale is truncated,
+    // not when the stored value is truncated during formatting. This function
+    // is only responsible for formatting the stored value, so we don't add ~ here.
+    if magnitude >= 0 {
         // For values >= 1, show up to sig_figs digits total
         let precision = (sig_figs as i32 - magnitude - 1).max(0) as usize;
         format!("{:.precision$}", rounded, precision = precision)
@@ -461,12 +466,7 @@ fn format_float_with_sig_figs(value: f64, sig_figs: usize) -> String {
             rounded,
             precision = (sig_figs as i32 + magnitude.abs()) as usize
         )
-    };
-
-    // Note: The ~ symbol should only be added when the storage scale is truncated,
-    // not when the stored value is truncated during formatting. This function
-    // is only responsible for formatting the stored value, so we don't add ~ here.
-    formatted
+    }
 }
 
 /// Formatted string in the format: `value Quantity<systematic_literal, unit_shortname, dimension_name, [exponents and scales], type, brand>`
@@ -503,14 +503,12 @@ pub fn pretty_print_quantity(
         // For recognized composite dimensions, always use the dimension name (e.g., "Force", "Energy")
         // regardless of verbose/non-verbose mode, since these are established names
         info.dimension_name.to_string()
+    } else if verbose {
+        // For unrecognized dimensions in verbose mode, generate verbose dimension names
+        generate_verbose_dimension_names(dimensions.0.to_vec())
     } else {
-        if verbose {
-            // For unrecognized dimensions in verbose mode, generate verbose dimension names
-            generate_verbose_dimension_names(dimensions.0.to_vec())
-        } else {
-            // For unrecognized dimensions in non-verbose mode, use dimension symbols
-            generate_dimension_symbols(dimensions.0.to_vec())
-        }
+        // For unrecognized dimensions in non-verbose mode, use dimension symbols
+        generate_dimension_symbols(dimensions.0.to_vec())
     };
 
     let primary = if !unit_literal.is_empty() {
@@ -553,11 +551,10 @@ pub fn pretty_print_quantity(
     let mut type_suffix = format!(", {}", type_name);
 
     // Add Brand parameter if it's not the default () type
-    if let Some(brand) = brand_name {
-        if brand != "()" {
+    if let Some(brand) = brand_name
+        && brand != "()" {
             type_suffix.push_str(&format!(", {}", brand));
         }
-    }
 
     format!(
         "{}Quantity<{}{}{}{}>",
@@ -583,6 +580,70 @@ pub fn pretty_print_quantity_type(
         show_type_in_brackets,
         brand_name,
     )
+}
+
+/// Format a quantity as just `value unit`, with no surrounding `Quantity<…>`
+/// wrapper or storage-type annotation.
+///
+/// A dimensionless quantity renders as just the value. This backs
+/// [`UnitDisplayExt`](crate::api::UnitDisplayExt), which is useful when printing
+/// many quantities together (e.g. matrix cells) where the type annotation from
+/// the default `Display` is noise.
+pub fn pretty_print_unit_only(
+    value: f64,
+    dimensions: whippyunits_core::dimension_exponents::DynDimensionExponents,
+    scale: whippyunits_core::scale_exponents::ScaleExponents,
+) -> String {
+    let formatted_val = format_float_with_sig_figs(value, 5);
+
+    let unit_literal = generate_unit_literal(
+        dimensions,
+        scale,
+        UnitLiteralConfig {
+            verbose: false,
+            prefer_si_units: true,
+        },
+    );
+
+    let unit = if !unit_literal.is_empty() {
+        unit_literal
+    } else {
+        // Fall back to bare dimension symbols for dimensions with no named unit.
+        generate_dimension_symbols(dimensions.0.to_vec())
+    };
+
+    if unit.is_empty() {
+        formatted_val
+    } else {
+        format!("{formatted_val} {unit}")
+    }
+}
+
+/// Pretty print only the unit label (no value), given a dimension/scale pair.
+///
+/// This is the value-free counterpart to [`pretty_print_unit_only`]: it renders
+/// the same unit symbol (e.g. `m/s`, `s⁻²`) but without any numeric value, so it
+/// can be driven purely from type-level metadata. Returns an empty string for a
+/// dimensionless, unscaled unit.
+pub fn pretty_print_unit_label(
+    dimensions: whippyunits_core::dimension_exponents::DynDimensionExponents,
+    scale: whippyunits_core::scale_exponents::ScaleExponents,
+) -> String {
+    let unit_literal = generate_unit_literal(
+        dimensions,
+        scale,
+        UnitLiteralConfig {
+            verbose: false,
+            prefer_si_units: true,
+        },
+    );
+
+    if !unit_literal.is_empty() {
+        unit_literal
+    } else {
+        // Fall back to bare dimension symbols for dimensions with no named unit.
+        generate_dimension_symbols(dimensions.0.to_vec())
+    }
 }
 
 /// Pretty print a quantity value (with value) using the new unit types from whippyunits-core

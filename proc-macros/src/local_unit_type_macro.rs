@@ -608,8 +608,8 @@ impl LocalQuantityMacroInput {
             scale_ident.to_string()
         } else {
             // It's a compound unit - generate the unit expression using local base units
-            let result = self.generate_unit_expression_from_dimensions(dimensions);
-            result
+            
+            self.generate_unit_expression_from_dimensions(dimensions)
         }
     }
 
@@ -708,9 +708,8 @@ impl LocalQuantityMacroInput {
             ),
         ];
 
-        let result =
-            dimension_exponents_to_unit_expression_with_base_units(dimensions, &base_units_refs);
-        result
+        
+        dimension_exponents_to_unit_expression_with_base_units(dimensions, &base_units_refs)
     }
 
     /// Handle prefixed compound unit logic for a single unit

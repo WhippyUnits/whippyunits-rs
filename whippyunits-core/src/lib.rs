@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
+// The scale/dimension lookup tables use wide tuple types keyed by SI dimension;
+// factoring them into aliases would not aid readability.
+#![allow(clippy::type_complexity)]
 
 //! Default dimension data for whippyunits
 //!

@@ -58,22 +58,22 @@ impl Parse for DefineBaseUnitsInput {
 
         if total_params == 0 {
             // Just namespace - no brand, no base units (probably an error, but handle gracefully)
-            return Ok(DefineBaseUnitsInput {
+            Ok(DefineBaseUnitsInput {
                 namespace,
                 brand: None,
                 base_units: None,
-            });
+            })
         } else if total_params == 1 {
             // namespace, brand => branded default shadow
             let _comma: Comma = input.parse()?;
             let brand_ident: Ident = input.parse()?;
             // Allow optional trailing comma
             let _ = input.parse::<Comma>().ok();
-            return Ok(DefineBaseUnitsInput {
+            Ok(DefineBaseUnitsInput {
                 namespace,
                 brand: Some(brand_ident),
                 base_units: None,
-            });
+            })
         } else if total_params == 8 {
             // namespace, 8 base units => unbranded rescaling shadow
             let _comma: Comma = input.parse()?;
@@ -92,7 +92,7 @@ impl Parse for DefineBaseUnitsInput {
             let luminosity_scale: Ident = input.parse()?;
             let _comma: Comma = input.parse()?;
             let angle_scale: Ident = input.parse()?;
-            return Ok(DefineBaseUnitsInput {
+            Ok(DefineBaseUnitsInput {
                 namespace,
                 brand: None,
                 base_units: Some((
@@ -105,7 +105,7 @@ impl Parse for DefineBaseUnitsInput {
                     luminosity_scale,
                     angle_scale,
                 )),
-            });
+            })
         } else if total_params == 9 {
             // namespace, brand, 8 base units => branded rescaling shadow
             let _comma: Comma = input.parse()?;
@@ -126,7 +126,7 @@ impl Parse for DefineBaseUnitsInput {
             let luminosity_scale: Ident = input.parse()?;
             let _comma: Comma = input.parse()?;
             let angle_scale: Ident = input.parse()?;
-            return Ok(DefineBaseUnitsInput {
+            Ok(DefineBaseUnitsInput {
                 namespace,
                 brand: Some(brand_ident),
                 base_units: Some((
@@ -139,15 +139,15 @@ impl Parse for DefineBaseUnitsInput {
                     luminosity_scale,
                     angle_scale,
                 )),
-            });
+            })
         } else {
-            return Err(syn::Error::new(
+            Err(syn::Error::new(
                 input.span(),
                 format!(
                     "Expected 1, 8, or 9 parameters after namespace, found {}",
                     total_params
                 ),
-            ));
+            ))
         }
     }
 }
@@ -263,7 +263,7 @@ impl DefineBaseUnitsInput {
 
         // Create the prefixed macro name identifier
         let prefixed_macro_name = syn::Ident::new(
-            &format!("{}_quantity", namespace.to_string()),
+            &format!("{}_quantity", namespace),
             namespace.span(),
         );
 
@@ -336,7 +336,7 @@ impl DefineBaseUnitsInput {
                 /// Define a local quantity with the specified value and storage type, scaled to the local base units.
                 #(#[doc = #brand_note_doc_for_macro])*
                 ///
-                /// This is a *local shadow* of the [quantity!](crate::quantity!) macro - if you are surprised by this,
+                /// This is a local shadow of the [quantity!](crate::quantity!) macro - if you are surprised by this,
                 /// look for an invocation of [define_unit_declarators!](crate::define_unit_declarators!) in the scope.  This macro will always
                 /// store values in the local base units.  Therefore, the  *declaration type* of a `quantity!` invocation is
                 /// not necessarily the same as the *storage type* of the quantity.  When in doubt, use a concrete type assertion
@@ -477,7 +477,7 @@ impl DefineBaseUnitsInput {
             let sanitized_name = dimension.name.replace(" ", "");
             let trait_name = format!(
                 "Local{}",
-                whippyunits_core::CapitalizedFmt(&sanitized_name).to_string()
+                whippyunits_core::CapitalizedFmt(&sanitized_name)
             );
 
             // Determine scale identifier based on dimension (used later for documentation)
@@ -829,7 +829,7 @@ impl DefineBaseUnitsInput {
                 // Check if the scale name matches the unit name (capitalized)
                 let unit_name_capitalized = whippyunits_core::CapitalizedFmt(unit.name).to_string();
                 if unit_name_capitalized == scale_name {
-                    let type_ident = syn::Ident::new(&scale_name, proc_macro2::Span::call_site());
+                    let type_ident = syn::Ident::new(scale_name, proc_macro2::Span::call_site());
                     return Some(quote! {
                         whippyunits::default_declarators::#type_ident
                     });
@@ -848,7 +848,7 @@ impl DefineBaseUnitsInput {
                     );
                     if type_name == scale_name {
                         let type_ident =
-                            syn::Ident::new(&scale_name, proc_macro2::Span::call_site());
+                            syn::Ident::new(scale_name, proc_macro2::Span::call_site());
                         return Some(quote! {
                             whippyunits::default_declarators::#type_ident
                         });
@@ -900,7 +900,7 @@ impl DefineBaseUnitsInput {
 
         // Create prefixed macro name
         let prefixed_macro_name = syn::Ident::new(
-            &format!("{}_quantity", namespace.to_string()),
+            &format!("{}_quantity", namespace),
             namespace.span(),
         );
 
@@ -968,10 +968,10 @@ impl DefineBaseUnitsInput {
                 #[macro_export]
                 macro_rules! #prefixed_macro_name {
                     ($value:expr, $unit:expr) => {
-                        <whippyunits::unit!($unit, f64, #brand_type)>::new($value)
+                        <whippyunits::qty!($unit, f64, #brand_type)>::new($value)
                     };
                     ($value:expr, $unit:expr, $storage_type:ty) => {
-                        <whippyunits::unit!($unit, $storage_type, #brand_type)>::new($value)
+                        <whippyunits::qty!($unit, $storage_type, #brand_type)>::new($value)
                     };
                 }
 
@@ -1053,34 +1053,34 @@ impl DefineBaseUnitsInput {
                 trait_methods.push(quote! {
                     fn #fn_name_ident(self) -> <whippyunits::Helper<{
                         0
-                    }, whippyunits::unit!(#unit_symbol_ident, T, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type;
+                    }, whippyunits::qty!(#unit_symbol_ident, T, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type;
                 });
 
                 // Generate impls that delegate to default_declarators and convert brand
                 impl_f64_methods.push(quote! {
                     fn #fn_name_ident(self) -> <whippyunits::Helper<{
                         0
-                    }, whippyunits::unit!(#unit_symbol_ident, f64, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
+                    }, whippyunits::qty!(#unit_symbol_ident, f64, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
                         let q = whippyunits::default_declarators::#scale_name_ident::new(self);
-                        <whippyunits::unit!(#unit_symbol_ident, f64, #brand_type_tokens)>::new(q.unsafe_value)
+                        <whippyunits::qty!(#unit_symbol_ident, f64, #brand_type_tokens)>::new(q.unsafe_value)
                     }
                 });
 
                 impl_i32_methods.push(quote! {
                     fn #fn_name_ident(self) -> <whippyunits::Helper<{
                         0
-                    }, whippyunits::unit!(#unit_symbol_ident, i32, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
+                    }, whippyunits::qty!(#unit_symbol_ident, i32, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
                         let q = whippyunits::default_declarators::#scale_name_ident::new(self);
-                        <whippyunits::unit!(#unit_symbol_ident, i32, #brand_type_tokens)>::new(q.unsafe_value)
+                        <whippyunits::qty!(#unit_symbol_ident, i32, #brand_type_tokens)>::new(q.unsafe_value)
                     }
                 });
 
                 impl_i64_methods.push(quote! {
                     fn #fn_name_ident(self) -> <whippyunits::Helper<{
                         0
-                    }, whippyunits::unit!(#unit_symbol_ident, i64, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
+                    }, whippyunits::qty!(#unit_symbol_ident, i64, #brand_type_tokens)> as whippyunits::GetSecondGeneric>::Type {
                         let q = whippyunits::default_declarators::#scale_name_ident::new(self);
-                        <whippyunits::unit!(#unit_symbol_ident, i64, #brand_type_tokens)>::new(q.unsafe_value)
+                        <whippyunits::qty!(#unit_symbol_ident, i64, #brand_type_tokens)>::new(q.unsafe_value)
                     }
                 });
 

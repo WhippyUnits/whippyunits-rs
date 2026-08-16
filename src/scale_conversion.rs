@@ -125,10 +125,10 @@ macro_rules! _define_float_rescale {
         /// # #[culit::culit(whippyunits::default_declarators::literals)]
         /// # fn main() {
         /// # use whippyunits::api::rescale;
-        /// # use whippyunits::unit;
-        /// let distance: unit!(mm) = rescale(1.0m); // ✅ 1000.0 Quantity<mm, f64>
-        /// let distance: unit!(m) = rescale(1000.0mm); // ✅ 1.0 Quantity<m, f64>
-        /// // let _distance: unit!(s) = rescale(1.0m); // ❌ Compile error (dimension mismatch)
+        /// # use whippyunits::qty;
+        /// let distance: qty!(mm) = rescale(1.0m); // ✅ 1000.0 Quantity<mm, f64>
+        /// let distance: qty!(m) = rescale(1000.0mm); // ✅ 1.0 Quantity<m, f64>
+        /// // let _distance: qty!(s) = rescale(1.0m); // ❌ Compile error (dimension mismatch)
         /// // let _distance = rescale(1.0m); // ❌ Compile error (ambiguous target type)
         /// # }
         /// ```
@@ -136,7 +136,7 @@ macro_rules! _define_float_rescale {
         /// If you are in an inline context where it is not easy to specify the target type, you can use the
         /// [rescale!](crate::rescale!) macro (which uses [`api::rescale`](crate::api::rescale)).
         ///
-        /// Addition and subtraction in whippyunits are *scale-safe* - they require that both operands
+        /// Addition and subtraction in whippyunits are scale-safe - they require that both operands
         /// have the same scale.  Accordingly, to add or subtract quantities with different scales, you
         /// must use the `rescale` function to convert one of the quantities to the scale of the other:
         ///
@@ -161,8 +161,8 @@ macro_rules! _define_float_rescale {
                 $($float_rescale_aggregate_args)*
             ) as $T;
             Quantity::<
-                Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
-                Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                Unit<Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
+                Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                 $T,
                 Brand,
             >::new(
@@ -197,10 +197,10 @@ macro_rules! _define_int_rescale {
         /// # #[culit::culit(whippyunits::default_declarators::literals)]
         /// # fn main() {
         /// # use whippyunits::api::rescale_i32;
-        /// # use whippyunits::unit;
-        /// let distance: unit!(mm, i32) = rescale_i32(1m); // ✅ 1000 Quantity<mm, i32>
-        /// let distance: unit!(m, i32) = rescale_i32(1000mm); // ✅ 1 Quantity<m, i32>
-        /// // let _distance: unit!(s, i32) = rescale_i32(1m); // ❌ Compile error (dimension mismatch)
+        /// # use whippyunits::qty;
+        /// let distance: qty!(mm, i32) = rescale_i32(1m); // ✅ 1000 Quantity<mm, i32>
+        /// let distance: qty!(m, i32) = rescale_i32(1000mm); // ✅ 1 Quantity<m, i32>
+        /// // let _distance: qty!(s, i32) = rescale_i32(1m); // ❌ Compile error (dimension mismatch)
         /// // let _distance = rescale_i32(1m); // ❌ Compile error (ambiguous target type)
         /// # }
         /// ```
@@ -208,7 +208,7 @@ macro_rules! _define_int_rescale {
         /// If you are in an inline context where it is not easy to specify the target type, you can use the
         /// [rescale!](crate::rescale!) macro with an explicit type: `rescale!(quantity, unit, i32)`.
         ///
-        /// Addition and subtraction in whippyunits are *scale-safe* - they require that both operands
+        /// Addition and subtraction in whippyunits are scale-safe - they require that both operands
         /// have the same scale.  Accordingly, to add or subtract quantities with different scales, you
         /// must use the `rescale` function to convert one of the quantities to the scale of the other:
         ///
@@ -216,8 +216,8 @@ macro_rules! _define_int_rescale {
         /// # #[culit::culit(whippyunits::default_declarators::literals)]
         /// # fn main() {
         /// # use whippyunits::api::rescale_i32;
-        /// # use whippyunits::unit;
-        /// let distance: unit!(mm, i32) = rescale_i32(1m) + 1000mm; // ✅ 2000 Quantity<mm, i32>
+        /// # use whippyunits::qty;
+        /// let distance: qty!(mm, i32) = rescale_i32(1m) + 1000mm; // ✅ 2000 Quantity<mm, i32>
         /// // let _distance = 1m + 1000mm; // ❌ Compile error (scale mismatch)
         /// # }
         /// ```
@@ -237,7 +237,7 @@ macro_rules! _define_int_rescale {
 
             // Numerical stability: check for potential overflow on multiplication
             // If value * num would overflow, divide first; otherwise multiply first
-            let result = if quantity.unsafe_value > <$T>::max_value() / num {
+            let result = if quantity.unsafe_value > <$T>::MAX / num {
                 // Potential overflow: divide first to reduce intermediate value
                 (quantity.unsafe_value / den) * num
             } else {
@@ -246,8 +246,8 @@ macro_rules! _define_int_rescale {
             };
 
             Quantity::<
-                Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
-                Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                Unit<Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
+                Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                 $T,
                 Brand,
             >::new(result)

@@ -103,11 +103,10 @@ fn convert_long_name_to_short_direct(long_name: &str) -> Option<String> {
     }
 
     // Try to handle prefixed units by stripping prefix and finding base unit
-    if let Some((prefix, base)) = whippyunits_core::SiPrefix::strip_any_prefix_name(long_name) {
-        if let Some((unit, _dimension)) = Dimension::find_unit_by_name(base) {
+    if let Some((prefix, base)) = whippyunits_core::SiPrefix::strip_any_prefix_name(long_name)
+        && let Some((unit, _dimension)) = Dimension::find_unit_by_name(base) {
             return Some(format!("{}{}", prefix.symbol(), unit.symbols[0]));
         }
-    }
 
     None
 }

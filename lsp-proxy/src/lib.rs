@@ -1,3 +1,7 @@
+// This proxy returns the same wide 8-tuple shapes rust-analyzer emits; factoring
+// them into aliases would only obscure the types being mirrored.
+#![allow(clippy::type_complexity)]
+
 use anyhow::Result;
 use log::warn;
 use serde_json::Value;
@@ -23,6 +27,12 @@ pub use unit_formatter::DisplayConfig;
 pub struct LspProxy {
     hover_processor: HoverProcessor,
     inlay_hint_processor: InlayHintProcessor,
+}
+
+impl Default for LspProxy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LspProxy {
@@ -85,16 +95,15 @@ impl LspProxy {
         // Check if this is a hover response
         if let Some(result) = &lsp_msg.result {
             if let Some(hover_content) = self.hover_processor.extract_hover_content(result) {
-                match self.hover_processor.improve_hover_content(hover_content) {
-                    improved_content => match serde_json::to_value(improved_content) {
-                        Ok(value) => {
-                            lsp_msg.result = Some(value);
-                            needs_processing = true;
-                        }
-                        Err(e) => {
-                            warn!("Failed to serialize hover content: {}", e);
-                        }
-                    },
+                let improved_content = self.hover_processor.improve_hover_content(hover_content);
+                match serde_json::to_value(improved_content) {
+                    Ok(value) => {
+                        lsp_msg.result = Some(value);
+                        needs_processing = true;
+                    }
+                    Err(e) => {
+                        warn!("Failed to serialize hover content: {}", e);
+                    }
                 }
             }
         }

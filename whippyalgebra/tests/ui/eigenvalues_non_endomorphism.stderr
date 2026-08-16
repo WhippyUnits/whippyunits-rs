@@ -1,0 +1,21 @@
+error[E0599]: the method `eigenvalues` exists for struct `MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>, DNil>>, Matrix<f64, Const<2>, Const<2>, ArrayStorage<f64, 2, 2>>>`, but its trait bounds were not satisfied
+  --> tests/ui/eigenvalues_non_endomorphism.rs:17:18
+   |
+17 |     let _bad = a.eigenvalues();
+   |                  ^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+   |
+  ::: $WORKSPACE/src/unit.rs
+   |
+   | pub struct Unit<Scale, Dimension>(PhantomData<(Scale, Dimension)>);
+   | --------------------------------- doesn't satisfy `<_ as UnitDiv<Unit<Scale, Dimension>>>::Output = Unit<Scale, Dimension<_M, _L, _T<1>>>`
+   |
+  ::: $WORKSPACE/whippyunits-core/src/num.rs
+   |
+   | pub struct N<const X: i16>;
+   | -------------------------- doesn't satisfy `<_ as Sub<N<0>>>::Output = N<0>` or `<_ as Sub<N<0>>>::Output = N<1>`
+   |
+   = note: the following trait bounds were not satisfied:
+           `<whippyunits_core::num::N<1> as Sub<whippyunits_core::num::N<0>>>::Output = whippyunits_core::num::N<0>`
+           which is required by `<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>> as UnitDiv<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>>>::Output = whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>`
+           `<whippyunits_core::num::N<0> as Sub>::Output = whippyunits_core::num::N<1>`
+           which is required by `<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>> as UnitDiv<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension>>>::Output = whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>`

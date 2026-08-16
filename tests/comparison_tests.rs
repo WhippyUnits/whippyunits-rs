@@ -1,7 +1,7 @@
 use whippyunits::api::rescale;
 use whippyunits::default_declarators::*;
+use whippyunits::qty;
 use whippyunits::quantity;
-use whippyunits::unit;
 
 #[test]
 fn test_reflexivity() {
@@ -42,6 +42,9 @@ fn test_transitivity() {
 }
 
 #[test]
+// This test deliberately exercises negated comparison operators to verify
+// ordering consistency, which is exactly what `neg_cmp_op_on_partial_ord` flags.
+#[allow(clippy::neg_cmp_op_on_partial_ord)]
 fn test_ordering_consistency() {
     let a = 5.0.meters();
     let b = 10.0.meters();
@@ -74,8 +77,8 @@ fn test_rescale_preserves_ordering() {
     assert!(b > rescale(c)); // 2m > 0.5m
 
     // Ordering preserved: rescale both to same target scale, then compare
-    let a_mm: unit!(mm) = rescale(a);
-    let b_mm: unit!(mm) = rescale(b);
+    let a_mm: qty!(mm) = rescale(a);
+    let b_mm: qty!(mm) = rescale(b);
     assert!(a_mm < b_mm); // 1000mm < 2000mm
 }
 
@@ -91,9 +94,9 @@ fn test_rescale_preserves_equality() {
 #[test]
 fn test_partial_ordering_properties() {
     // Verify PartialOrd properties hold for integer types
-    let a: unit!(m, i32) = quantity!(5, m, i32);
-    let b: unit!(m, i32) = quantity!(10, m, i32);
-    let c: unit!(m, i32) = quantity!(10, m, i32);
+    let a: qty!(m, i32) = quantity!(5, m, i32);
+    let b: qty!(m, i32) = quantity!(10, m, i32);
+    let c: qty!(m, i32) = quantity!(10, m, i32);
 
     // Transitivity
     assert!(a < b);

@@ -107,7 +107,7 @@ pub fn generate_literal_macros_module(
     let quantity_path = if is_local_mode {
         // Local mode: use the prefixed macro name from parent namespace module
         let prefixed_macro_name = syn::Ident::new(
-            &format!("{}_quantity", namespace_ident.to_string()),
+            &format!("{}_quantity", namespace_ident),
             namespace_ident.span(),
         );
         quote! { #prefixed_macro_name! }
@@ -130,14 +130,14 @@ pub fn generate_literal_macros_module(
                 let equivalent_text = if let Some(storage_type) = storage_type {
                     format!(
                         "equivalent to: `{}::quantity!(value, {}, {})`<br><hr><br>",
-                        namespace_ident.to_string(),
+                        namespace_ident,
                         unit_symbol,
                         storage_type
                     )
                 } else {
                     format!(
                         "equivalent to: `{}::quantity!(value, {})`<br><hr><br>",
-                        namespace_ident.to_string(),
+                        namespace_ident,
                         unit_symbol
                     )
                 };
@@ -174,18 +174,16 @@ pub fn generate_literal_macros_module(
                     }
                 }
                 formatted_details
+            } else if let Some(storage_type) = storage_type {
+                format!(
+                    "equivalent to: `default_declarators::quantity!(value, {}, {})`<br>",
+                    unit_symbol, storage_type
+                )
             } else {
-                if let Some(storage_type) = storage_type {
-                    format!(
-                        "equivalent to: `default_declarators::quantity!(value, {}, {})`<br>",
-                        unit_symbol, storage_type
-                    )
-                } else {
-                    format!(
-                        "equivalent to: `default_declarators::quantity!(value, {})`<br>",
-                        unit_symbol
-                    )
-                }
+                format!(
+                    "equivalent to: `default_declarators::quantity!(value, {})`<br>",
+                    unit_symbol
+                )
             }
         };
 

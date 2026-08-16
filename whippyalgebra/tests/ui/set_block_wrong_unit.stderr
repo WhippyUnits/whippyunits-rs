@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/set_block_wrong_unit.rs:17:34
+   |
+17 |     m.set_block::<0, 1, 2, 2, _>(&blk);
+   |       -------------------------- ^^^^ expected `1`, found `0`
+   |       |
+   |       arguments to this method are incorrect
+   |
+   = note: expected reference `&MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<1>, _3, _5, _Pi<1>>, Dimension<_M, _L, _T, _I, _Θ, _N, _J, _A<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T, _I, _Θ<1>>>, DNil>>, Matrix<f64, Const<2>, Const<2>, _>>`
+              found reference `&MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T, _I<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<1>, _3, _5, _Pi<1>>, Dimension<_M, _L, _T, _I, _Θ, _N, _J, _A<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T, _I, _Θ<1>>>, DNil>>, Matrix<f64, Const<2>, Const<2>, ArrayStorage<f64, 2, 2>>>`
+note: method defined here
+  --> src/nalgebra/matrix/construction.rs
+   |
+   |     pub fn set_block<const R0: usize, const C0: usize, const RB: usize, const CB: usize, SB>(
+   |            ^^^^^^^^^

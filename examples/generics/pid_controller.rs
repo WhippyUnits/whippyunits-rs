@@ -9,6 +9,10 @@
 //! derived from the process variable and control output types using the Mul/Div trait
 //! associated types.
 
+// `x - x` is the unit-safe way to obtain a correctly-typed zero for a generic
+// quantity, which is exactly the pattern clippy's `eq_op` lint flags.
+#![allow(clippy::eq_op)]
+
 use whippyunits::dimension_traits::Time;
 use whippyunits::dimension_traits::define_generic_dimension;
 use whippyunits::op_result;
@@ -133,8 +137,8 @@ where
 }
 
 fn main() {
+    use whippyunits::qty;
     use whippyunits::quantity;
-    use whippyunits::unit;
 
     println!("Testing PID Controller with Concrete Types");
     println!("==========================================");
@@ -172,7 +176,7 @@ fn main() {
     // Run a few iterations
     for i in 0..5 {
         // Type inference: Rust infers PV, CO, T from the concrete quantity types
-        let control_output: unit!(V) = controller.compute(pv, setpoint);
+        let control_output: qty!(V) = controller.compute(pv, setpoint);
 
         println!("Iteration {}:", i + 1);
         println!("  Control output: {}", control_output);

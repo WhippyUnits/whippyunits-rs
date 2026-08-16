@@ -60,9 +60,7 @@ fn generate_prefixed_symbols() -> HashMap<String, (String, String, String)> {
         // Find the first unit that is prefixable (no conversion factor)
         if let Some(prefixable_unit) = dimension
             .units
-            .iter()
-            .filter(|unit| !unit.has_conversion())
-            .next()
+            .iter().find(|unit| !unit.has_conversion())
         {
             for symbol in prefixable_unit.symbols {
                 // Generate all prefix + symbol combinations
@@ -169,9 +167,7 @@ fn find_prefixable_unit_by_symbol(symbol: &str) -> Option<(&'static Unit, &'stat
     Dimension::ALL.iter().find_map(|dimension| {
         dimension
             .units
-            .iter()
-            .filter(|unit| !unit.has_conversion())
-            .next()
+            .iter().find(|unit| !unit.has_conversion())
             .and_then(|unit| {
                 if unit
                     .symbols
@@ -244,6 +240,9 @@ fn print_report() {
     }
 
     // Show known exceptions
+    // Defensive guard: `KNOWN_EXCEPTIONS` is currently non-empty, but this
+    // section should simply disappear if the list is ever cleared.
+    #[allow(clippy::const_is_empty)]
     if !KNOWN_EXCEPTIONS.is_empty() {
         println!("ℹ️  KNOWN EXCEPTIONS:");
         println!("These symbols are allowed to conflict with prefix+base combinations:\n");

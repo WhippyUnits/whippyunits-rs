@@ -1,0 +1,61 @@
+[package]
+name = "whippyalgebra"
+version = "0.1.0"
+edition = "2024"
+authors = ["Oblarg"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/WhippyUnits/whippyunits-rs"
+description = "Unit-safe linear algebra newtypes over nalgebra, powered by whippyunits"
+keywords = ["units", "linear-algebra", "nalgebra", "dimensional", "whippyunits"]
+categories = ["science", "mathematics"]
+readme = "README.md"
+
+[features]
+default = ["nalgebra"]
+# The nalgebra backend adapter (`MixedUnitMatrix`, `UnitVector`, …) and the
+# `state_space` example. Disable it to depend only on the backend-agnostic unit
+# machinery (`dims`, `index`, `entry`) while a different linear-algebra backend
+# adapter is used.
+nalgebra = ["dep:nalgebra"]
+
+[dependencies]
+whippyunits = { path = "..", version = "0.3.0" }
+whippyalgebra-macros = { path = "../whippyalgebra-macros", version = "0.1.0" }
+# Type-level naturals + const-generic bridge for indexing/slicing dimension
+# lists. Shared with the rest of the stack (whippyunits-core uses it too), so we
+# don't maintain a parallel Peano encoding. `const-generics` gives `Const`/`U`.
+typenum = { version = "1", features = ["const-generics"] }
+nalgebra = { version = "0.33", optional = true }
+# Building a storage-type value from the `f64` scale factor in `rescale_matrix`
+# (via `FromPrimitive::from_f64`); this is nalgebra's own numeric-trait crate, a
+# supertrait of `ComplexField`, so it adds nothing new to the dependency tree.
+num-traits = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+trybuild = "1.0"
+
+[lints.clippy]
+# The nalgebra decomposition wrappers surface the underlying (already complex)
+# backend return types verbatim; factoring them into aliases would only obscure
+# the types being mirrored. Inherent to the design across lib, tests, examples.
+type_complexity = "allow"
+
+[[example]]
+name = "dare"
+path = "examples/dare.rs"
+required-features = ["nalgebra"]
+
+[[example]]
+name = "block_roundtrip"
+path = "examples/block_roundtrip.rs"
+required-features = ["nalgebra"]
+
+[[example]]
+name = "least_squares"
+path = "examples/least_squares.rs"
+required-features = ["nalgebra"]
+
+[[example]]
+name = "generalized_least_squares"
+path = "examples/generalized_least_squares.rs"
+required-features = ["nalgebra"]

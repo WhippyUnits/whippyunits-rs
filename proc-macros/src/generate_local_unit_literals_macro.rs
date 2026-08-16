@@ -67,6 +67,5 @@ impl LocalUnitLiteralsInput {
             false,
             syn::Ident::new("local_unit_literals", proc_macro2::Span::mixed_site()),
         )
-        .into()
     }
 }

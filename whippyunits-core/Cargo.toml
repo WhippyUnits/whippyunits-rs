@@ -13,8 +13,6 @@ categories = ["science", "no-std"]
 syn = { version = "2.0", features = ["full"] }
 proc-macro2 = "1.0"
 typenum = "1"
-[features]
-cge = []
 
 [[bin]]
 name = "symbol_linter"

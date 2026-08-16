@@ -82,5 +82,4 @@ pub fn generate_custom_literal_module_with_name(module_name: &str) -> proc_macro
         false,
         syn::Ident::new(module_name, proc_macro2::Span::mixed_site()),
     )
-    .into()
 }

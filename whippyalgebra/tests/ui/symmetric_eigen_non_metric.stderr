@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<N<1> as Neg>::Output == N<1>`
+  --> tests/ui/symmetric_eigen_non_metric.rs:16:18
+   |
+16 |     let _bad = a.symmetric_eigen();
+   |                  ^^^^^^^^^^^^^^^ expected `1`, found `-1`
+   |
+   = note: expected struct `whippyunits_core::num::N<1>`
+              found struct `whippyunits_core::num::N<-1>`
+   = note: required for `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>` to implement `UnitInv`
+note: required by a bound in `whippyalgebra::nalgebra::linalg::symmetric_eigen::<impl MixedUnitMatrix<RowDims, ColDims, Matrix<T, D, D, S>, Brand>>::symmetric_eigen`
+  --> src/nalgebra/linalg/symmetric_eigen.rs
+   |
+   |     pub fn symmetric_eigen(self) -> SymmetricEigen<RowDims, T, D, Brand>
+   |            --------------- required by a bound in this associated function
+   |     where
+   |         RowDims: MetricShape<ColDims> + MapUnits<ToDimensionless>,
+   |                  ^^^^^^^^^^^^^^^^^^^^ required by this bound in `whippyalgebra::nalgebra::linalg::symmetric_eigen::<impl MixedUnitMatrix<RowDims, ColDims, Matrix<T, D, D, S>, Brand>>::symmetric_eigen`

@@ -3,9 +3,10 @@
 /// Fast string search to detect Quantity types without deserialization
 /// This performs a performant string search for "Quantity<" patterns
 pub fn contains_quantity_types_fast(json_payload: &str) -> bool {
-    // Check for the basic Quantity pattern first
-    if !json_payload.contains("Quantity") {
-        return false;
+    // Bare `Unit<Scale…>` types (e.g. from whippyalgebra) carry no `Quantity`
+    // text, so detect the inner unit wrapper directly.
+    if json_payload.contains("Unit<Scale") {
+        return true;
     }
 
     // For initial inlay hints (full type in one chunk), validate the Quantity< pattern
@@ -24,9 +25,9 @@ pub fn contains_quantity_types_fast(json_payload: &str) -> bool {
 /// Validate that Quantity<...> has the expected format with proper structuref
 pub fn validate_quantity_format(json_payload: &str) -> bool {
     // Use a simple state machine to find and validate Quantity<...> patterns
-    let mut chars = json_payload.char_indices().peekable();
+    let chars = json_payload.char_indices().peekable();
 
-    while let Some((pos, ch)) = chars.next() {
+    for (pos, ch) in chars {
         if ch == 'Q' {
             // Check if this could be the start of "Quantity<"
             let remaining = &json_payload[pos..];
@@ -130,7 +131,7 @@ mod tests {
     #[test]
     fn test_contains_quantity_types_fast() {
         // Test with message containing new Quantity types with Scale<...> and Dimension<...> structs
-        let message_with_quantity = r#"{"jsonrpc":"2.0","id":1,"result":{"contents":{"kind":"markdown","value":"```rust\nlet x: Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64> = 5.0.meters();\n```"}}}"#;
+        let message_with_quantity = r#"{"jsonrpc":"2.0","id":1,"result":{"contents":{"kind":"markdown","value":"```rust\nlet x: Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64> = 5.0.meters();\n```"}}}"#;
         assert!(contains_quantity_types_fast(message_with_quantity));
 
         // Test with message not containing Quantity types
@@ -151,7 +152,7 @@ mod tests {
     #[test]
     fn test_validate_quantity_format() {
         // Test valid new Quantity format with Scale<...> and Dimension<...> structs
-        let valid_quantity = "Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, f64>";
+        let valid_quantity = "Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, f64>";
         assert!(validate_quantity_format(valid_quantity));
 
         // Test invalid format without Scale<...> and Dimension<...> structs
@@ -159,7 +160,7 @@ mod tests {
         assert!(!validate_quantity_format(invalid_quantity));
 
         // Test with nested angle brackets
-        let nested_quantity = "Quantity<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>, Some<f64>>";
+        let nested_quantity = "Quantity<Unit<Scale<_2<0>, _3<0>, _5<0>, _Pi<0>>, Dimension<_M<0>, _L<1>, _T<0>, _I<0>, _Θ<0>, _N<0>, _J<0>, _A<0>>>, Some<f64>>";
         assert!(validate_quantity_format(nested_quantity));
     }
 

@@ -1,0 +1,19 @@
+error[E0271]: type mismatch resolving `<PInt<UInt<UTerm, B1>> as Rem<PInt<UInt<UInt<UTerm, B1>, B0>>>>::Output == Z0`
+  --> tests/ui/uniform_cholesky_odd_exponent.rs:23:18
+   |
+23 |     let _bad = m.cholesky();
+   |                  ^^^^^^^^ expected `Z0`, found `PInt<UInt<UTerm, B1>>`
+   |
+   = note: expected struct `typenum::int::Z0`
+              found struct `typenum::int::PInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>>`
+   = note: required for `typenum::int::PInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>>` to implement `typenum::type_operators::PartialDiv<typenum::int::PInt<typenum::uint::UInt<typenum::uint::UInt<typenum::uint::UTerm, typenum::bit::B1>, typenum::bit::B0>>>`
+   = note: required for `whippyunits_core::num::N<1>` to implement `whippyunits_core::num::Halve`
+   = note: required for `whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>` to implement `UnitSqrt`
+note: required by a bound in `whippyalgebra::nalgebra::linalg::cholesky::<impl UniformUnitMatrix<U, Matrix<T, D, D, S>, Brand>>::cholesky`
+  --> src/nalgebra/linalg/cholesky.rs
+   |
+   |     pub fn cholesky(self) -> Option<UniformCholesky<U, T, D, Brand>>
+   |            -------- required by a bound in this associated function
+   |     where
+   |         U: UnitSqrt,
+   |            ^^^^^^^^ required by this bound in `whippyalgebra::nalgebra::linalg::cholesky::<impl UniformUnitMatrix<U, Matrix<T, D, D, S>, Brand>>::cholesky`

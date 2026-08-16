@@ -33,7 +33,7 @@
 //! ```
 
 use crate::quantity::Quantity;
-use crate::quantity::{_2, _3, _5, _A, _I, _J, _L, _M, _N, _Pi, _T, _Θ, Dimension, Scale};
+use crate::quantity::{_2, _3, _5, _A, _I, _J, _L, _M, _N, _Pi, _T, _Θ, Dimension, Scale, Unit};
 use whippyunits_proc_macros::generate_default_declarators;
 
 #[doc(hidden)]
@@ -53,8 +53,8 @@ macro_rules! define_quantity {
         // Generate the type definitions (generic with f64 default)
         $(
             pub type $scale_name<T = f64> = Quantity<
-                Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                 T,
             >;
         )*
@@ -63,7 +63,7 @@ macro_rules! define_quantity {
         impl $trait_name for f64 {
             $(
                 fn $fn_name(self) -> $scale_name {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, f64>::new(self)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, f64>::new(self)
                 }
             )*
         }
@@ -72,7 +72,7 @@ macro_rules! define_quantity {
         impl $trait_name<i32> for i32 {
             $(
                 fn $fn_name(self) -> $scale_name<i32> {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, i32>::new(self)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, i32>::new(self)
                 }
             )*
         }
@@ -90,8 +90,8 @@ macro_rules! define_nonstorage_quantity {
         pub trait $trait_name<T = f64> {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     T,
                 >;
             )*
@@ -101,11 +101,11 @@ macro_rules! define_nonstorage_quantity {
         impl $trait_name<f64> for f64 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     f64,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, f64>::new(self * $conversion_factor)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, f64>::new(self * $conversion_factor)
                 }
             )*
         }
@@ -114,11 +114,11 @@ macro_rules! define_nonstorage_quantity {
         impl $trait_name<i32> for i32 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     i32,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, i32>::new((self as f64 * $conversion_factor) as i32)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, i32>::new((self as f64 * $conversion_factor) as i32)
                 }
             )*
         }
@@ -127,11 +127,11 @@ macro_rules! define_nonstorage_quantity {
         impl $trait_name<i64> for i64 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     i64,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, i64>::new((self as f64 * $conversion_factor) as i64)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, i64>::new((self as f64 * $conversion_factor) as i64)
                 }
             )*
         }
@@ -190,8 +190,8 @@ macro_rules! define_nonstorage_affine_quantity {
         pub trait $trait_name<T = f64> {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     T,
                 >;
             )*
@@ -201,11 +201,11 @@ macro_rules! define_nonstorage_affine_quantity {
         impl $trait_name<f64> for f64 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     f64,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, f64>::new(self * $conversion_factor + $affine_offset)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, f64>::new(self * $conversion_factor + $affine_offset)
                 }
             )*
         }
@@ -214,11 +214,11 @@ macro_rules! define_nonstorage_affine_quantity {
         impl $trait_name<i32> for i32 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     i32,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, i32>::new((self as f64 * $conversion_factor + $affine_offset) as i32)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, i32>::new((self as f64 * $conversion_factor + $affine_offset) as i32)
                 }
             )*
         }
@@ -227,11 +227,11 @@ macro_rules! define_nonstorage_affine_quantity {
         impl $trait_name<i64> for i64 {
             $(
                 fn $fn_name(self) -> Quantity<
-                    Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
-                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>,
+                    Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>,
+                    Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>,
                     i64,
                 > {
-                    Quantity::<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>, i64>::new((self as f64 * $conversion_factor + $affine_offset) as i64)
+                    Quantity::<Unit<Scale<_2<$scale_p2>, _3<$scale_p3>, _5<$scale_p5>, _Pi<$scale_pi>>, Dimension<_M<$mass_exp>, _L<$length_exp>, _T<$time_exp>, _I<$current_exp>, _Θ<$temperature_exp>, _N<$amount_exp>, _J<$luminosity_exp>, _A<$angle_exp>>>, i64>::new((self as f64 * $conversion_factor + $affine_offset) as i64)
                 }
             )*
         }

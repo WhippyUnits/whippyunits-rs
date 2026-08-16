@@ -1,13 +1,10 @@
 //! Type Assertions for Safe Multiplication and Division
 //!
-//! This example shows how to use unit!() to verify that multiplication
+//! This example shows how to use qty!() to verify that multiplication
 //! and division operations produce the expected dimensions, catching
 //! errors at compile time instead of runtime.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
-use whippyunits::unit;
+use whippyunits::qty;
 
 #[culit::culit(whippyunits::default_declarators::literals)]
 fn main() {
@@ -21,5 +18,5 @@ fn main() {
     let _unchecked_area = width * height; // ⚠️ No compile error if units are wrong
 
     // With a type assertion, the operation will compile only if the units are correct.
-    let area: unit!(m ^ 2) = width * height; // ✅ Compile error if units are wrong
+    let _area: qty!(m ^ 2) = width * height; // ✅ Compile error if units are wrong
 }

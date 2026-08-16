@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+  --> tests/ui/rescale_matrix_dim_mismatch.rs:20:21
+   |
+20 |     let _bad: Bad = rescale_matrix(&a);
+   |               ---   ^^^^^^^^^^^^^^^^^^ expected `0`, found `1`
+   |               |
+   |               expected due to this
+   |
+   = note: expected struct `MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale, Dimension<_M, _L, _T<1>>>, DNil>>, Matrix<f64, Const<2>, Const<2>, ArrayStorage<f64, 2, 2>>>`
+              found struct `MixedUnitMatrix<DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M, _L<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M, _L<1>>>, DNil>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M, _L, _T<1>>>, DCons<whippyalgebra::Unit<whippyunits::quantity::Scale<_2<_>, _3<_>, _5<_>, _Pi<_>>, Dimension<_M, _L, _T<1>>>, DNil>>, Matrix<f64, Const<2>, Const<2>, ArrayStorage<f64, 2, 2>>>`

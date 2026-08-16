@@ -1,8 +1,56 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 /// Shared utilities for proc macros
 use syn::Ident;
 use whippyunits_core::{Dimension, SiPrefix, UnitExpr, get_unit_info};
+
+/// Resolves the path prefix by which the invoking crate refers to
+/// `whippyunits`, so generated code works both downstream and within the
+/// `whippyunits` crate itself.
+///
+/// - When expanded downstream, it yields the name the dependency is imported
+///   under, so `unit!`/`qty!` keep working even if the crate is renamed in
+///   `Cargo.toml`.
+/// - When expanded inside the `whippyunits` package (its lib, examples, tests,
+///   or benches — all of which `proc-macro-crate` reports as
+///   [`FoundCrate::Itself`]), it yields `::whippyunits`. This resolves in the
+///   lib via the `extern crate self as whippyunits;` alias, and in the
+///   package's other targets via the ordinary dependency edge to the lib. A
+///   literal `crate::` cannot serve both, since examples/tests are compiled as
+///   separate crates.
+pub fn whippyunits_path() -> TokenStream {
+    match proc_macro_crate::crate_name("whippyunits") {
+        Ok(proc_macro_crate::FoundCrate::Name(name)) => {
+            let ident = Ident::new(&name, Span::call_site());
+            quote!(::#ident)
+        }
+        // `Itself` (any target of the whippyunits package) or a resolution
+        // failure both fall back to the conventional name.
+        Ok(proc_macro_crate::FoundCrate::Itself) | Err(_) => quote!(::whippyunits),
+    }
+}
+
+/// Emits an `i16` as a const-generic argument that rust-analyzer parses
+/// correctly, working around a proc-macro-bridge regression.
+///
+/// A negative value emitted by a proc-macro as a single `Literal` token (`-1`)
+/// trips a rust-analyzer bug (nightly >= 2025-11-25): the bridge drops the
+/// leading `-`, so `_T<-1>` is inferred as `_T<0>` (e.g. `m/s` degrades to `m`).
+/// Emitting the value as a block with the sign as a separate unary-negation
+/// `Punct` — `_T<{ -1 }>` — round-trips correctly. `{ -1 }` is a *concrete*
+/// const expression, so it stays on stable (no `generic_const_exprs`), and rustc
+/// treats it identically to `-1`.
+pub fn const_exp(value: i16) -> TokenStream {
+    if value < 0 {
+        // Magnitude as a positive literal; the `-` below is a real Punct. Use
+        // the unsigned magnitude so `i16::MIN` cannot overflow the negation.
+        let mag = proc_macro2::Literal::u16_unsuffixed(value.unsigned_abs());
+        quote!({ -#mag })
+    } else {
+        let lit = proc_macro2::Literal::i16_unsuffixed(value);
+        quote!(#lit)
+    }
+}
 
 /// Check if a unit name can be parsed as a valid Rust identifier
 /// This filters out units with unicode characters or other invalid identifier characters
@@ -33,6 +81,8 @@ pub fn get_declarator_type_for_unit(unit_name: &str) -> Option<TokenStream> {
         return None;
     }
 
+    let wu = whippyunits_path();
+
     // Check if it's a base unit (these have corresponding types)
     let atomic_dimensions = whippyunits_core::Dimension::BASIS;
     for dimension in atomic_dimensions {
@@ -44,7 +94,7 @@ pub fn get_declarator_type_for_unit(unit_name: &str) -> Option<TokenStream> {
             let type_name = whippyunits_core::CapitalizedFmt(unit.name).to_string();
             let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
             return Some(quote::quote! {
-                whippyunits::default_declarators::#type_ident
+                #wu::default_declarators::#type_ident
             });
         }
     }
@@ -59,7 +109,7 @@ pub fn get_declarator_type_for_unit(unit_name: &str) -> Option<TokenStream> {
             let type_name = generate_scale_name(prefix.name(), base_unit.name);
             let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
             return Some(quote::quote! {
-                whippyunits::default_declarators::#type_ident
+                #wu::default_declarators::#type_ident
             });
         }
     }
@@ -69,7 +119,7 @@ pub fn get_declarator_type_for_unit(unit_name: &str) -> Option<TokenStream> {
         let type_name = whippyunits_core::CapitalizedFmt(unit.name).to_string();
         let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
         return Some(quote::quote! {
-            whippyunits::default_declarators::#type_ident
+            #wu::default_declarators::#type_ident
         });
     }
 
@@ -89,6 +139,8 @@ pub fn get_declarator_type_for_exponents(
     if dimension_exponents == DynDimensionExponents::ZERO {
         return None;
     }
+
+    let wu = whippyunits_path();
 
     // Find the dimension that matches these exponents
     let matching_dimension = Dimension::ALL
@@ -119,7 +171,7 @@ pub fn get_declarator_type_for_exponents(
 
             let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
             return Some(quote::quote! {
-                whippyunits::default_declarators::#type_ident
+                #wu::default_declarators::#type_ident
             });
         }
     }
@@ -143,7 +195,7 @@ pub fn get_declarator_type_for_exponents(
 
                 let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
                 return Some(quote::quote! {
-                    whippyunits::default_declarators::#type_ident
+                    #wu::default_declarators::#type_ident
                 });
             }
         }

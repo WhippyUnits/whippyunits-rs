@@ -3,9 +3,6 @@
 //! This example demonstrates `lossless_into` and `lossy_into` for converting
 //! the storage type of a quantity while preserving its scale, dimension, and brand.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
 use whippyunits::quantity;
 
 fn main() {
@@ -48,7 +45,7 @@ fn main() {
     println!("  f32 → f64: {} → {}", distance_f32, distance_f64);
 
     // float → integer: truncates toward zero
-    let speed = quantity!(9.8, m/s^2);
+    let speed = quantity!(9.8, m / s ^ 2);
     let speed_i32 = speed.lossy_into::<i32>();
     println!("  f64 → i32: {} → {} (truncated)", speed, speed_i32);
 
@@ -78,5 +75,8 @@ fn main() {
     let as_f64 = original.lossy_into::<f64>();
     let as_f32 = as_f64.lossy_into::<f32>();
     let back = as_f32.lossy_into::<i32>();
-    println!("  i32 → f64 → f32 → i32: {} → {} → {} → {}", original, as_f64, as_f32, back);
+    println!(
+        "  i32 → f64 → f32 → i32: {} → {} → {} → {}",
+        original, as_f64, as_f32, back
+    );
 }

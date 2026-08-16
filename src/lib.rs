@@ -1,34 +1,34 @@
 //! WhippyUnits is a zero-cost units-of-measure library for Rust that provides:
-//! 
+//!
 //! - Dimensional safety (`m + s` is a compile error)
 //! - Scale safety (`m + mm` requires explicit `rescale`)
 //! - Ergonomic syntax: macros (`quantity!(1, m)`), methods (`5.0.meters()`), and even literals (`5.0m`)
 //! - `no-std` and `no-alloc` compatibility
-//! 
-//! Works on stable Rust by default, with optional support for nightly `generic_const_exprs` via the `cge` feature flag.
-//! 
+//!
+//! Works on stable Rust.
+//!
 //! ## Why WhippyUnits?
-//! 
+//!
 //! Unlike other Rust units-of-measure libraries, WhippyUnits is:
-//! 
+//!
 //! - Language-server integrated: pretty-prints complex type signatures in hover info and inlay hints
 //! - Log-scale-encoded: supports lossless rescaling at the type level, effectively acting as a dimensionally-aware compile-time precision extension
 //! - Scale-explicit: arithmetic operations are always explicit about the scale of the result
 //! - Angle-aware: angular units (radians, degrees, etc.) are safely handled as first-class dimensions, but with a special erasure behavior via `.into()` to allow ease-of-use in standard trigonometric functions
-//! - Scale-generic: write functions constrained by dimension - or a disjunctive set of dimensions - that work with any scale, *without* imposing arbitrary rescaling at API boundaries
+//! - Scale-generic: write functions constrained by dimension - or a disjunctive set of dimensions - that work with any scale, without imposing arbitrary rescaling at API boundaries
 //! - UCUM compliant: supports UCUM-format unit strings (e.g. `"kg.m2/s2"`) for easy interoperability and code generation
 //! - Fixed-point friendly: integer types are guaranteed to use pure integer math for all operations
-//! 
+//!
 //! ## Quick Start
 //!
 //! ```rust
-//! use whippyunits::{quantity, unit, value};
+//! use whippyunits::{quantity, qty, value};
 //! use whippyunits::api::rescale;
 //!
 //! let d1 = quantity!(1.0, m);
 //! let d2 = quantity!(500.0, mm);
 //!
-//! let sum_m: unit!(m) = d1 + rescale(d2);
+//! let sum_m: qty!(m) = d1 + rescale(d2);
 //! assert_eq!(value!(sum_m, m), 1.5);
 //! ```
 //!
@@ -39,7 +39,6 @@
 //! | `std`   | Yes     | Enables standard library support (implies `alloc`) |
 //! | `alloc` | Yes     | Enables `Display`/`Debug` impls on `Quantity` (requires a global allocator) |
 //! | `serde` | Yes     | Enables `Serialize`/`Deserialize` impls, `from_json!`/`from_string!` macros, and `.fmt()` (implies `alloc`) |
-//! | `cge`   | No      | Enables nightly `generic_const_exprs` (requires nightly toolchain) |
 //!
 //! ## `no_std` and `no_alloc` Support
 //!
@@ -49,10 +48,10 @@
 //!
 //! ```toml
 //! # no_std + no_alloc (stack-only, no Display/Debug)
-//! whippyunits = { version = "0.1", default-features = false }
+//! whippyunits = { version = "0.3", default-features = false }
 //!
 //! # no_std + alloc (adds Display/Debug impls)
-//! whippyunits = { version = "0.1", default-features = false, features = ["alloc"] }
+//! whippyunits = { version = "0.3", default-features = false, features = ["alloc"] }
 //! ```
 //!
 //! Without `alloc`, `Quantity` does not implement `Display` or `Debug`.
@@ -70,7 +69,7 @@
 //!
 //! For the full categorized example index, see
 //! [README in crate source](https://docs.rs/crate/whippyunits/latest/source/README.md).
-//! 
+//!
 //! ## Developer Tooling
 //!
 //! The companion [`whippyunits-lsp-proxy`](https://github.com/WhippyUnits/whippyunits-rs/tree/main/lsp-proxy)
@@ -84,29 +83,27 @@
 //!
 //! See the respective READMEs for setup instructions.
 //!
-//! ## Experimental Features
-//! 
-//! By default, WhippyUnits uses a typenum-based polyfill for compile-time dimensional arithmetic.
+//! ## Dimensional Arithmetic
+//!
+//! WhippyUnits uses a typenum-based polyfill for compile-time dimensional arithmetic.
 //! This polyfill is fully functional, but is limited to working with integer exponents in the range -200 to 200.
-//! To use `generic_const_exprs` (requires nightly toolchain) instead, enable the `cge` feature flag:
-//! 
-//! ```toml
-//! [dependencies]
-//! whippyunits = { version = "0.1", features = ["cge"] }
-//! ```
-//! 
-//! With the `cge` flag, exponents can span the full range of i16 integers.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
+// The type-level dimensional machinery produces intentionally large `Quantity<
+// Unit<Scale<...>, Dimension<...>>, T>` signatures, and the scale-conversion /
+// pretty-print helpers take one parameter per SI base dimension. Neither is
+// improved by clippy's structural heuristics.
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc as alloc_crate;
 
-#[doc(hidden)]
-pub trait IsI16<const S: i16> {}
-impl<const S: i16> IsI16<S> for () {}
+// Lets the `unit!`/`qty!`/`quantity!` macros' fully-qualified `whippyunits::…`
+// output resolve when expanded *inside* this crate (the macros cannot emit a
+// bare `crate::`, since the package's examples and tests compile as separate
+// crates for which `crate::` would point at the wrong place).
+extern crate self as whippyunits;
 
 #[doc(hidden)]
 pub struct Helper<const N: usize, ActualT>(ActualT);
@@ -141,8 +138,13 @@ pub mod rescale_macro;
 pub mod scale_conversion;
 #[cfg(feature = "serde")]
 pub mod serialization;
+pub mod unit;
 
 pub use quantity::Quantity;
+pub use unit::{
+    DivUnit, HasUnit, InvUnit, MulUnit, SqrtUnit, Unit, UnitDiv, UnitEq, UnitInv, UnitMul,
+    UnitSqrt, UnitsEqual,
+};
 
 /// Creates a branded or auto-rescaling [Quantity] declarator module.
 ///
@@ -229,17 +231,53 @@ pub use whippyunits_proc_macros::define_unit_declarators;
 #[doc(hidden)]
 pub use whippyunits_proc_macros::local_unit_type as local_unit;
 
-/// Creates a concrete [Quantity] type from a unit expression.
+/// Creates a bare [Unit] type — a unit's dimensional signature (scale +
+/// dimension), with no storage type, brand, or value.
 ///
-/// This is particularly useful for constraining the result of potentially-type-ambiguous operations,
-/// such as multiplication of two quantities with different dimensions.  If you want to construct a
-/// quantity with a known value, use the `quantity!` macro instead.
+/// A [Unit] is what you want when reasoning about units purely at the type
+/// level (for example the per-entry units of a unit-safe matrix). To get a
+/// concrete [Quantity] *type* wrapping the unit, use the [`qty!`](crate::qty)
+/// macro; to construct a quantity *value*, use [`quantity!`](crate::quantity!).
 ///
 /// ## Syntax
 ///
 /// ```rust,ignore
 /// unit!(unit_expr);
-/// unit!(unit_expr, storage_type);
+/// ```
+///
+/// Where `unit_expr` is a "unit literal expression" (see [`qty!`](crate::qty)
+/// for the full grammar). Any storage/brand arguments are meaningless for a
+/// bare unit and are not accepted.
+///
+/// ## Examples
+///
+/// ```rust
+/// # fn main() {
+/// # use whippyunits::unit;
+/// use whippyunits::{Unit, UnitDiv};
+/// // The value-free signature of "meters per second":
+/// type Speed = unit!(m / s);
+/// // Unit-level algebra composes these signatures without any value:
+/// type Accel = <Speed as UnitDiv<unit!(s)>>::Output; // == unit!(m / s^2)
+/// # let _ = core::marker::PhantomData::<(Speed, Accel)>;
+/// # }
+/// ```
+#[doc(inline)]
+pub use whippyunits_proc_macros::proc_unit as unit;
+
+/// Creates a concrete [Quantity] type from a unit expression.
+///
+/// This is particularly useful for constraining the result of potentially-type-ambiguous operations,
+/// such as multiplication of two quantities with different dimensions.  If you want to construct a
+/// quantity with a known value, use the `quantity!` macro instead; for the bare, value-free unit
+/// type, use the [`unit!`](crate::unit!) macro.
+///
+/// ## Syntax
+///
+/// ```rust,ignore
+/// qty!(unit_expr);
+/// qty!(unit_expr, storage_type);
+/// qty!(unit_expr, storage_type, brand_type);
 /// ```
 ///
 /// Where:
@@ -256,6 +294,13 @@ pub use whippyunits_proc_macros::local_unit_type as local_unit;
 ///             - There may be at most one division expression in a unit literal expression
 ///             - All terms trailing the division symbol are considered to be in the denominator
 /// - `storage_type`: An optional storage type for the quantity. Defaults to `f64`.
+/// - `brand_type`: An optional brand type for the quantity. Defaults to `()`.
+///     - The brand is positional and follows the storage type, so specifying a
+///       brand requires also specifying the storage type:
+///       `qty!(m, f64, MyBrand)`.
+///     - Brands mark otherwise-identical quantities as belonging to distinct
+///       families; whippyunits arithmetic only combines quantities that share a
+///       brand.
 ///
 /// ## Examples
 ///
@@ -263,20 +308,20 @@ pub use whippyunits_proc_macros::local_unit_type as local_unit;
 /// # #[culit::culit(whippyunits::default_declarators::literals)]
 /// # fn main() {
 /// # use whippyunits::api::rescale;
-/// # use whippyunits::unit;
+/// # use whippyunits::qty;
 /// // Constrain a multiplication to compile error if the units are wrong:
 /// let area = 5.0m * 5.0m; // ⚠️ Correct, but unchecked; will compile regardless of the units
 /// let area = 5.0m * 5.0s; // ❌ BUG: compiles fine, but is not an area
-/// let area: unit!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
-/// // let area: unit!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
+/// let area: qty!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
+/// // let area: qty!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
 ///
 /// // Specify the target dimension of a rescale operation:
-/// let area: unit!(mm) = rescale(5.0m);
+/// let area: qty!(mm) = rescale(5.0m);
 /// assert_eq!(area.unsafe_value, 5000.0);
 /// # }
 /// ```
 #[doc(inline)]
-pub use whippyunits_proc_macros::proc_unit as unit;
+pub use whippyunits_proc_macros::proc_qty as qty;
 
 /// Creates a [Quantity] from a value and unit expression.
 ///

@@ -28,10 +28,10 @@
 //! # #[culit::culit(whippyunits::default_declarators::literals)]
 //! # fn main() {
 //! # use whippyunits::api::rescale;
-//! # use whippyunits::unit;
-//! let distance: unit!(mm) = rescale(1.0m); // Converts meters to millimeters
-//! let distance: unit!(m) = rescale(1000.0mm); // Converts millimeters to meters
-//! // let _distance: unit!(s) = rescale(1.0m); // ❌ Compile error: dimension mismatch
+//! # use whippyunits::qty;
+//! let distance: qty!(mm) = rescale(1.0m); // Converts meters to millimeters
+//! let distance: qty!(m) = rescale(1000.0mm); // Converts millimeters to meters
+//! // let _distance: qty!(s) = rescale(1.0m); // ❌ Compile error: dimension mismatch
 //! # }
 //! ```
 //!
@@ -67,11 +67,11 @@
 //! ```rust
 //! # #[culit::culit(whippyunits::default_declarators::literals)]
 //! # fn main() {
-//! # use whippyunits::unit;
+//! # use whippyunits::qty;
 //! let area = 5.0m * 5.0m; // ⚠️ Correct, but unchecked; will compile regardless of the units
 //! let area = 5.0m * 5.0s; // ❌ BUG: compiles fine, but is not an area
-//! let area: unit!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
-//! // let area: unit!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
+//! let area: qty!(m^2) = 5.0m * 5.0m; // ✅ Correct, will compile only if the units are correct
+//! // let area: qty!(m^2) = 5.0m * 5.0s; // 🚫 Compile error, as expected
 //! # }
 //! ```
 //!
@@ -135,9 +135,6 @@ use crate::quantity::*;
 use crate::scale_conversion::*;
 #[cfg(feature = "alloc")]
 use core::fmt;
-#[cfg(has_generic_const_exprs)]
-use crate::IsI16;
-#[cfg(not(has_generic_const_exprs))]
 use whippyunits_core::num::N;
 
 define_aggregate_scale_factor_rational!(
@@ -210,16 +207,16 @@ macro_rules! define_float_rescale {
             ),
             (
                 Quantity<
-                    Scale<_2<SCALE_P2_FROM>, _3<SCALE_P3_FROM>, _5<SCALE_P5_FROM>, _Pi<SCALE_PI_FROM>>,
-                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                    Unit<Scale<_2<SCALE_P2_FROM>, _3<SCALE_P3_FROM>, _5<SCALE_P5_FROM>, _Pi<SCALE_PI_FROM>>,
+                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                     $T,
                     Brand,
                 >
             ),
             (
                 Quantity<
-                    Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
-                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                    Unit<Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
+                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                     $T,
                     Brand,
                 >
@@ -254,16 +251,16 @@ macro_rules! define_int_rescale {
             ),
             (
                 Quantity<
-                    Scale<_2<SCALE_P2_FROM>, _3<SCALE_P3_FROM>, _5<SCALE_P5_FROM>, _Pi<SCALE_PI_FROM>>,
-                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                    Unit<Scale<_2<SCALE_P2_FROM>, _3<SCALE_P3_FROM>, _5<SCALE_P5_FROM>, _Pi<SCALE_PI_FROM>>,
+                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                     $T,
                     Brand,
                 >
             ),
             (
                 Quantity<
-                    Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
-                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>,
+                    Unit<Scale<_2<SCALE_P2_TO>, _3<SCALE_P3_TO>, _5<SCALE_P5_TO>, _Pi<SCALE_PI_TO>>,
+                    Dimension<_M<MASS_EXPONENT>, _L<LENGTH_EXPONENT>, _T<TIME_EXPONENT>, _I<CURRENT_EXPONENT>, _Θ<TEMPERATURE_EXPONENT>, _N<AMOUNT_EXPONENT>, _J<LUMINOSITY_EXPONENT>, _A<ANGLE_EXPONENT>>>,
                     $T,
                     Brand,
                 >
@@ -300,96 +297,6 @@ define_int_rescale!(rescale_usize, usize);
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(has_generic_const_exprs)]
-macro_rules! define_arithmetic_signed {
-    ($T:ty, $rescale_fn:ident) => {
-        $crate::_define_arithmetic_signed!(
-        // single dimension, single scale
-        (
-            const MASS_EXPONENT: i16,
-            const LENGTH_EXPONENT: i16,
-            const TIME_EXPONENT: i16,
-            const CURRENT_EXPONENT: i16,
-            const TEMPERATURE_EXPONENT: i16,
-            const AMOUNT_EXPONENT: i16,
-            const LUMINOSITY_EXPONENT: i16,
-            const ANGLE_EXPONENT: i16,
-            const SCALE_P2: i16,
-            const SCALE_P3: i16,
-            const SCALE_P5: i16,
-            const SCALE_PI: i16,
-            Brand,
-        ),
-        // multiple dimension, multiple scales
-        (
-            const MASS_EXPONENT_1: i16, const MASS_EXPONENT_2: i16,
-            const LENGTH_EXPONENT_1: i16, const LENGTH_EXPONENT_2: i16,
-            const TIME_EXPONENT_1: i16, const TIME_EXPONENT_2: i16,
-            const CURRENT_EXPONENT_1: i16, const CURRENT_EXPONENT_2: i16,
-            const TEMPERATURE_EXPONENT_1: i16, const TEMPERATURE_EXPONENT_2: i16,
-            const AMOUNT_EXPONENT_1: i16, const AMOUNT_EXPONENT_2: i16,
-            const LUMINOSITY_EXPONENT_1: i16, const LUMINOSITY_EXPONENT_2: i16,
-            const ANGLE_EXPONENT_1: i16, const ANGLE_EXPONENT_2: i16,
-            const SCALE_P2_1: i16, const SCALE_P3_1: i16, const SCALE_P5_1: i16, const SCALE_PI_1: i16,
-            const SCALE_P2_2: i16, const SCALE_P3_2: i16, const SCALE_P5_2: i16, const SCALE_PI_2: i16,
-            Brand,
-        ),
-        // inversion parameters
-        (),
-        // inversion where clauses
-        (
-            (): IsI16<{ -MASS_EXPONENT }>,
-            (): IsI16<{ -LENGTH_EXPONENT }>,
-            (): IsI16<{ -TIME_EXPONENT }>,
-            (): IsI16<{ -CURRENT_EXPONENT }>,
-            (): IsI16<{ -TEMPERATURE_EXPONENT }>,
-            (): IsI16<{ -AMOUNT_EXPONENT }>,
-            (): IsI16<{ -LUMINOSITY_EXPONENT }>,
-            (): IsI16<{ -ANGLE_EXPONENT }>,
-            (): IsI16<{ -SCALE_P2 }>,
-            (): IsI16<{ -SCALE_P3 }>,
-            (): IsI16<{ -SCALE_P5 }>,
-            (): IsI16<{ -SCALE_PI }>
-        ),
-        // mul output dimension where clauses
-        (
-            (): IsI16<{ MASS_EXPONENT_1 + MASS_EXPONENT_2 }>,
-            (): IsI16<{ LENGTH_EXPONENT_1 + LENGTH_EXPONENT_2 }>,
-            (): IsI16<{ TIME_EXPONENT_1 + TIME_EXPONENT_2 }>,
-            (): IsI16<{ CURRENT_EXPONENT_1 + CURRENT_EXPONENT_2 }>,
-            (): IsI16<{ TEMPERATURE_EXPONENT_1 + TEMPERATURE_EXPONENT_2 }>,
-            (): IsI16<{ AMOUNT_EXPONENT_1 + AMOUNT_EXPONENT_2 }>,
-            (): IsI16<{ LUMINOSITY_EXPONENT_1 + LUMINOSITY_EXPONENT_2 }>,
-            (): IsI16<{ ANGLE_EXPONENT_1 + ANGLE_EXPONENT_2 }>,
-            (): IsI16<{ SCALE_P2_1 + SCALE_P2_2 }>,
-            (): IsI16<{ SCALE_P3_1 + SCALE_P3_2 }>,
-            (): IsI16<{ SCALE_P5_1 + SCALE_P5_2 }>,
-            (): IsI16<{ SCALE_PI_1 + SCALE_PI_2 }>
-        ),
-        // div output dimension where clauses
-        (
-            (): IsI16<{ MASS_EXPONENT_1 - MASS_EXPONENT_2 }>,
-            (): IsI16<{ LENGTH_EXPONENT_1 - LENGTH_EXPONENT_2 }>,
-            (): IsI16<{ TIME_EXPONENT_1 - TIME_EXPONENT_2 }>,
-            (): IsI16<{ CURRENT_EXPONENT_1 - CURRENT_EXPONENT_2 }>,
-            (): IsI16<{ TEMPERATURE_EXPONENT_1 - TEMPERATURE_EXPONENT_2 }>,
-            (): IsI16<{ AMOUNT_EXPONENT_1 - AMOUNT_EXPONENT_2 }>,
-            (): IsI16<{ LUMINOSITY_EXPONENT_1 - LUMINOSITY_EXPONENT_2 }>,
-            (): IsI16<{ ANGLE_EXPONENT_1 - ANGLE_EXPONENT_2 }>,
-            (): IsI16<{ SCALE_P2_1 - SCALE_P2_2 }>,
-            (): IsI16<{ SCALE_P3_1 - SCALE_P3_2 }>,
-            (): IsI16<{ SCALE_P5_1 - SCALE_P5_2 }>,
-            (): IsI16<{ SCALE_PI_1 - SCALE_PI_2 }>
-        ),
-            // other parameters
-            $T, rescale_fn
-        );
-    }
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(has_generic_const_exprs))]
 macro_rules! define_arithmetic_signed {
     ($T:ty, $rescale_fn:ident) => {
         $crate::_define_arithmetic_signed!(
@@ -503,96 +410,6 @@ macro_rules! define_arithmetic_signed {
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(has_generic_const_exprs)]
-macro_rules! define_arithmetic {
-    ($T:ty, $rescale_fn:ident) => {
-        $crate::_define_arithmetic!(
-        // single dimension, single scale
-        (
-            const MASS_EXPONENT: i16,
-            const LENGTH_EXPONENT: i16,
-            const TIME_EXPONENT: i16,
-            const CURRENT_EXPONENT: i16,
-            const TEMPERATURE_EXPONENT: i16,
-            const AMOUNT_EXPONENT: i16,
-            const LUMINOSITY_EXPONENT: i16,
-            const ANGLE_EXPONENT: i16,
-            const SCALE_P2: i16,
-            const SCALE_P3: i16,
-            const SCALE_P5: i16,
-            const SCALE_PI: i16,
-            Brand,
-        ),
-        // multiple dimension, multiple scales
-        (
-            const MASS_EXPONENT_1: i16, const MASS_EXPONENT_2: i16,
-            const LENGTH_EXPONENT_1: i16, const LENGTH_EXPONENT_2: i16,
-            const TIME_EXPONENT_1: i16, const TIME_EXPONENT_2: i16,
-            const CURRENT_EXPONENT_1: i16, const CURRENT_EXPONENT_2: i16,
-            const TEMPERATURE_EXPONENT_1: i16, const TEMPERATURE_EXPONENT_2: i16,
-            const AMOUNT_EXPONENT_1: i16, const AMOUNT_EXPONENT_2: i16,
-            const LUMINOSITY_EXPONENT_1: i16, const LUMINOSITY_EXPONENT_2: i16,
-            const ANGLE_EXPONENT_1: i16, const ANGLE_EXPONENT_2: i16,
-            const SCALE_P2_1: i16, const SCALE_P3_1: i16, const SCALE_P5_1: i16, const SCALE_PI_1: i16,
-            const SCALE_P2_2: i16, const SCALE_P3_2: i16, const SCALE_P5_2: i16, const SCALE_PI_2: i16,
-            Brand,
-        ),
-        // inversion parameters
-        (),
-        // inversion where clauses
-        (
-            (): IsI16<{ -MASS_EXPONENT }>,
-            (): IsI16<{ -LENGTH_EXPONENT }>,
-            (): IsI16<{ -TIME_EXPONENT }>,
-            (): IsI16<{ -CURRENT_EXPONENT }>,
-            (): IsI16<{ -TEMPERATURE_EXPONENT }>,
-            (): IsI16<{ -AMOUNT_EXPONENT }>,
-            (): IsI16<{ -LUMINOSITY_EXPONENT }>,
-            (): IsI16<{ -ANGLE_EXPONENT }>,
-            (): IsI16<{ -SCALE_P2 }>,
-            (): IsI16<{ -SCALE_P3 }>,
-            (): IsI16<{ -SCALE_P5 }>,
-            (): IsI16<{ -SCALE_PI }>
-        ),
-        // mul output dimension where clauses
-        (
-            (): IsI16<{ MASS_EXPONENT_1 + MASS_EXPONENT_2 }>,
-            (): IsI16<{ LENGTH_EXPONENT_1 + LENGTH_EXPONENT_2 }>,
-            (): IsI16<{ TIME_EXPONENT_1 + TIME_EXPONENT_2 }>,
-            (): IsI16<{ CURRENT_EXPONENT_1 + CURRENT_EXPONENT_2 }>,
-            (): IsI16<{ TEMPERATURE_EXPONENT_1 + TEMPERATURE_EXPONENT_2 }>,
-            (): IsI16<{ AMOUNT_EXPONENT_1 + AMOUNT_EXPONENT_2 }>,
-            (): IsI16<{ LUMINOSITY_EXPONENT_1 + LUMINOSITY_EXPONENT_2 }>,
-            (): IsI16<{ ANGLE_EXPONENT_1 + ANGLE_EXPONENT_2 }>,
-            (): IsI16<{ SCALE_P2_1 + SCALE_P2_2 }>,
-            (): IsI16<{ SCALE_P3_1 + SCALE_P3_2 }>,
-            (): IsI16<{ SCALE_P5_1 + SCALE_P5_2 }>,
-            (): IsI16<{ SCALE_PI_1 + SCALE_PI_2 }>
-        ),
-        // div output dimension where clauses
-        (
-            (): IsI16<{ MASS_EXPONENT_1 - MASS_EXPONENT_2 }>,
-            (): IsI16<{ LENGTH_EXPONENT_1 - LENGTH_EXPONENT_2 }>,
-            (): IsI16<{ TIME_EXPONENT_1 - TIME_EXPONENT_2 }>,
-            (): IsI16<{ CURRENT_EXPONENT_1 - CURRENT_EXPONENT_2 }>,
-            (): IsI16<{ TEMPERATURE_EXPONENT_1 - TEMPERATURE_EXPONENT_2 }>,
-            (): IsI16<{ AMOUNT_EXPONENT_1 - AMOUNT_EXPONENT_2 }>,
-            (): IsI16<{ LUMINOSITY_EXPONENT_1 - LUMINOSITY_EXPONENT_2 }>,
-            (): IsI16<{ ANGLE_EXPONENT_1 - ANGLE_EXPONENT_2 }>,
-            (): IsI16<{ SCALE_P2_1 - SCALE_P2_2 }>,
-            (): IsI16<{ SCALE_P3_1 - SCALE_P3_2 }>,
-            (): IsI16<{ SCALE_P5_1 - SCALE_P5_2 }>,
-            (): IsI16<{ SCALE_PI_1 - SCALE_PI_2 }>
-        ),
-            // other parameters
-            $T, rescale_fn
-        );
-    }
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(has_generic_const_exprs))]
 macro_rules! define_arithmetic {
     ($T:ty, $rescale_fn:ident) => {
         $crate::_define_arithmetic!(
@@ -758,3 +575,160 @@ define_display_traits!(
         SCALE_PI,
     )
 );
+
+/// A [`Display`](fmt::Display) adapter that renders a quantity as `value unit`,
+/// omitting the `Quantity<…, T>` type annotation that the default `Display`
+/// impl appends.
+///
+/// Obtain one via [`UnitDisplayExt::unit_display`]. This is useful when many
+/// quantities are printed together (e.g. the cells of a matrix), where the
+/// repeated type annotation is noise.
+#[cfg(feature = "alloc")]
+pub struct UnitDisplay {
+    value: f64,
+    dimensions: whippyunits_core::dimension_exponents::DynDimensionExponents,
+    scale: whippyunits_core::scale_exponents::ScaleExponents,
+}
+
+#[cfg(feature = "alloc")]
+impl fmt::Display for UnitDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let pretty = pretty_print_unit_only(self.value, self.dimensions, self.scale);
+        f.write_str(&pretty)
+    }
+}
+
+/// Extension trait providing [`unit_display`](Self::unit_display), a `value unit`
+/// renderer without the bracketed storage-type annotation.
+#[cfg(feature = "alloc")]
+pub trait UnitDisplayExt {
+    /// Returns a [`Display`](fmt::Display) adapter that renders `value unit`.
+    fn unit_display(&self) -> UnitDisplay;
+}
+
+#[cfg(feature = "alloc")]
+impl<
+    const MASS_EXPONENT: i16,
+    const LENGTH_EXPONENT: i16,
+    const TIME_EXPONENT: i16,
+    const CURRENT_EXPONENT: i16,
+    const TEMPERATURE_EXPONENT: i16,
+    const AMOUNT_EXPONENT: i16,
+    const LUMINOSITY_EXPONENT: i16,
+    const ANGLE_EXPONENT: i16,
+    const SCALE_P2: i16,
+    const SCALE_P3: i16,
+    const SCALE_P5: i16,
+    const SCALE_PI: i16,
+    T,
+    Brand,
+> UnitDisplayExt
+    for Quantity<
+        Unit<
+            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<
+                _M<MASS_EXPONENT>,
+                _L<LENGTH_EXPONENT>,
+                _T<TIME_EXPONENT>,
+                _I<CURRENT_EXPONENT>,
+                _Θ<TEMPERATURE_EXPONENT>,
+                _N<AMOUNT_EXPONENT>,
+                _J<LUMINOSITY_EXPONENT>,
+                _A<ANGLE_EXPONENT>,
+            >,
+        >,
+        T,
+        Brand,
+    >
+where
+    T: Copy + num_traits::NumCast,
+{
+    fn unit_display(&self) -> UnitDisplay {
+        let value = <f64 as num_traits::NumCast>::from(self.unsafe_value)
+            .expect("unable to convert numeric value to f64 for display");
+        UnitDisplay {
+            value,
+            dimensions: whippyunits_core::dimension_exponents::DynDimensionExponents([
+                MASS_EXPONENT,
+                LENGTH_EXPONENT,
+                TIME_EXPONENT,
+                CURRENT_EXPONENT,
+                TEMPERATURE_EXPONENT,
+                AMOUNT_EXPONENT,
+                LUMINOSITY_EXPONENT,
+                ANGLE_EXPONENT,
+            ]),
+            scale: whippyunits_core::scale_exponents::ScaleExponents([
+                SCALE_P2, SCALE_P3, SCALE_P5, SCALE_PI,
+            ]),
+        }
+    }
+}
+
+/// Renders a quantity type's unit label (e.g. `m/s`, `s⁻²`) from its type-level
+/// scale and dimension alone — no value, and no instance required.
+///
+/// Because [`unit_label`](Self::unit_label) is an associated function reading
+/// only const generics, callers that have a `Quantity` *type* but no value (for
+/// example, code that wants to print the units in a matrix's row/column margins)
+/// can obtain the label with `<Q as UnitLabel>::unit_label()`. Returns an empty
+/// string for a dimensionless, unscaled unit.
+#[cfg(feature = "alloc")]
+pub trait UnitLabel {
+    /// Returns this unit's label, or an empty string if dimensionless.
+    fn unit_label() -> crate::alloc::String;
+}
+
+#[cfg(feature = "alloc")]
+impl<
+    const MASS_EXPONENT: i16,
+    const LENGTH_EXPONENT: i16,
+    const TIME_EXPONENT: i16,
+    const CURRENT_EXPONENT: i16,
+    const TEMPERATURE_EXPONENT: i16,
+    const AMOUNT_EXPONENT: i16,
+    const LUMINOSITY_EXPONENT: i16,
+    const ANGLE_EXPONENT: i16,
+    const SCALE_P2: i16,
+    const SCALE_P3: i16,
+    const SCALE_P5: i16,
+    const SCALE_PI: i16,
+    T,
+    Brand,
+> UnitLabel
+    for Quantity<
+        Unit<
+            Scale<_2<SCALE_P2>, _3<SCALE_P3>, _5<SCALE_P5>, _Pi<SCALE_PI>>,
+            Dimension<
+                _M<MASS_EXPONENT>,
+                _L<LENGTH_EXPONENT>,
+                _T<TIME_EXPONENT>,
+                _I<CURRENT_EXPONENT>,
+                _Θ<TEMPERATURE_EXPONENT>,
+                _N<AMOUNT_EXPONENT>,
+                _J<LUMINOSITY_EXPONENT>,
+                _A<ANGLE_EXPONENT>,
+            >,
+        >,
+        T,
+        Brand,
+    >
+{
+    fn unit_label() -> crate::alloc::String {
+        pretty_print_unit_label(
+            whippyunits_core::dimension_exponents::DynDimensionExponents([
+                MASS_EXPONENT,
+                LENGTH_EXPONENT,
+                TIME_EXPONENT,
+                CURRENT_EXPONENT,
+                TEMPERATURE_EXPONENT,
+                AMOUNT_EXPONENT,
+                LUMINOSITY_EXPONENT,
+                ANGLE_EXPONENT,
+            ]),
+            whippyunits_core::scale_exponents::ScaleExponents([
+                SCALE_P2, SCALE_P3, SCALE_P5, SCALE_PI,
+            ]),
+        )
+    }
+}

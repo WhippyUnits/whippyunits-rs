@@ -2,11 +2,12 @@
 //!
 //! This example demonstrates comparison operators (<, <=, >, >=, ==, !=) with whippyunits quantities.
 //!
-//! **Important**: Comparison operators are **scale-strict** - both operands must have the same scale.
+//! **Important**: Comparison operators are scale-strict - both operands must have the same scale.
 //! To compare quantities with different scales, use `rescale()` to convert one to match the other.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
+// This demo deliberately compares a quantity with itself (`x == x`) to show the
+// `==`/`!=` operators; that is exactly the pattern clippy's `eq_op` flags.
+#![allow(clippy::eq_op)]
 
 use whippyunits::api::rescale;
 

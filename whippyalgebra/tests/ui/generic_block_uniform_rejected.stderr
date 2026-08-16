@@ -1,0 +1,5 @@
+error: `generic_block` does not support the uniform `[Element]` axis spelling: a partitioned track's disassembly obligation (`Take<_, Out = Repeated<Element, N>>`) would require normalizing the repeated-list projection at a generic length, which the trait solver cannot do. Use `#[generic_matrix]` for a uniform axis, or name this track's sublist as an opaque type parameter.
+  --> tests/ui/generic_block_uniform_rejected.rs:15:13
+   |
+15 |     rows(N, [Volt]; M, RowB),
+   |             ^^^^^^

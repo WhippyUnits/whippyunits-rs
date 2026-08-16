@@ -3,10 +3,7 @@
 //! This example demonstrates how to rescale quantities to different units
 //! of the same dimension using the rescale function.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
-use whippyunits::{api::rescale, quantity, rescale, unit};
+use whippyunits::{api::rescale, qty, quantity, rescale};
 
 #[culit::culit(whippyunits::default_declarators::literals)]
 fn main() {
@@ -15,8 +12,8 @@ fn main() {
 
     println!("1. Length Rescaling:");
     let distance_m = 1.0m;
-    let distance_mm: unit!(mm) = rescale(distance_m);
-    let distance_km: unit!(km) = rescale(distance_m);
+    let distance_mm: qty!(mm) = rescale(distance_m);
+    let distance_km: qty!(km) = rescale(distance_m);
     println!("   {} = {}", distance_m, distance_mm);
     println!("   {} = {}", distance_m, distance_km);
 
@@ -25,15 +22,15 @@ fn main() {
 
     println!("\n2. Mass Rescaling:");
     let mass_kg = 1.0kg;
-    let mass_g: unit!(g) = rescale(mass_kg);
-    let mass_mg: unit!(mg) = rescale(mass_kg);
+    let mass_g: qty!(g) = rescale(mass_kg);
+    let mass_mg: qty!(mg) = rescale(mass_kg);
     println!("   {} = {}", mass_kg, mass_g);
     println!("   {} = {}", mass_kg, mass_mg);
 
     println!("\n3. Time Rescaling:");
     let time_s = 30.0s;
-    let time_min: unit!(min) = rescale(time_s);
-    let time_ms: unit!(ms) = rescale(time_s);
+    let time_min: qty!(min) = rescale(time_s);
+    let time_ms: qty!(ms) = rescale(time_s);
     println!("   {} = {}", time_s, time_min);
     println!("   {} = {}", time_s, time_ms);
 
@@ -54,13 +51,13 @@ fn main() {
 
     println!("\n6. Rescaling Compound Units:");
     let velocity = quantity!(100.0, km / h);
-    let velocity_ms: unit!(m / s) = rescale(velocity);
+    let velocity_ms: qty!(m / s) = rescale(velocity);
     println!("   {} = {}", velocity, velocity_ms);
 
     println!("\n7. Bidirectional Rescaling:");
     let original = 5.0m;
-    let converted: unit!(mm) = rescale(original);
-    let back: unit!(m) = rescale(converted);
+    let converted: qty!(mm) = rescale(original);
+    let back: qty!(m) = rescale(converted);
     println!("   {} -> {} -> {}", original, converted, back);
     assert!((original.unsafe_value - back.unsafe_value).abs() < 1e-10);
 }

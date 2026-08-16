@@ -69,6 +69,17 @@ pub fn generate_unit_literal(
         return systematic_literal;
     }
 
+    // Recognize pure integer powers of a named unit (e.g. V², V⁻¹, rot⁻¹) so that
+    // they stay compact instead of expanding into a base-dimension decomposition
+    // or being recast to the identity-scale unit with a numeric coefficient. This
+    // takes precedence over the per-dimension systematic literal below, but never
+    // over an exact (k = 1) match.
+    if let Some(power_literal) =
+        try_unit_power_literal(exponents, scale_factors, config.verbose)
+    {
+        return power_literal;
+    }
+
     // Check if we have a recognized dimension with a specific SI unit
     if let Some(info) = lookup_dimension_name(exponents_vec) {
         if let Some(si_shortname) = if config.verbose {
@@ -95,6 +106,135 @@ pub fn generate_unit_literal(
         // Unknown dimension, use the systematic literal
         systematic_literal
     }
+}
+
+/// Recognize an exponent vector that is a pure integer power of a named unit
+/// and render it compactly as `symbol` + superscript, rather than expanding it
+/// into a base-dimension decomposition. This covers both:
+///
+/// - composite SI units at identity scale — `V²`, `V⁻¹`, `N⁻²` instead of
+///   `kg⁻²·m⁻⁴·s⁶·A²`; and
+/// - scale-distinguished units — the alternate angular units `rot`, `deg`,
+///   `grad`, … — so `rot⁻¹` stays `rot⁻¹` instead of being recast to
+///   `(0.1590)rad⁻¹`.
+///
+/// It matches a candidate power `k` against both the dimension and the scale:
+/// the base `exponents / k` and `scale / k` must together be a registered unit.
+/// Because the scale is reduced too, a unit carrying an extra decimal prefix
+/// (e.g. `mrad²`, whose scale is not a clean multiple of any registered base
+/// scale) simply fails to match and falls through to the SI-prefix path — no
+/// prefix is ever silently dropped.
+///
+/// The `k = 1` case is skipped (an exact match, already handled by the
+/// dimension-name lookup with full prefix support), and pure single-dimension
+/// powers at identity scale (`m²`, `s⁻¹`) are left alone so that named
+/// reciprocals like hertz keep priority.
+fn try_unit_power_literal(
+    exponents: DynDimensionExponents,
+    scale_factors: ScaleExponents,
+    long_name: bool,
+) -> Option<String> {
+    // Bail out on any unresolved component (`i16::MIN` is the "unknown" sentinel);
+    // powers of an unknown are meaningless and `abs()` would overflow.
+    if exponents.0.contains(&i16::MIN)
+        || scale_factors.0.contains(&i16::MIN)
+    {
+        return None;
+    }
+
+    let nonzero_count = exponents.0.iter().filter(|&&e| e != 0).count();
+    if nonzero_count == 0 {
+        return None;
+    }
+    // Only fire for genuine composites (>= 2 base dimensions) or scale-carrying
+    // units; a bare single dimension at identity scale is the systematic
+    // generator's job (and must not shadow named reciprocals such as hertz).
+    if nonzero_count < 2 && scale_factors == ScaleExponents::IDENTITY {
+        return None;
+    }
+
+    // The primitive divisor is the gcd of the exponent magnitudes.
+    let g = exponents
+        .0
+        .iter()
+        .fold(0i16, |acc, &e| gcd_i16(acc, e.abs()));
+    if g == 0 {
+        return None;
+    }
+
+    // Candidate powers. For a primitive vector (g == 1) only the negated base is
+    // interesting — the positive `k = 1` is the exact match handled elsewhere.
+    // For g >= 2 the vector is genuinely a power, so check both signs.
+    let candidates: &[i16] = if g == 1 { &[-1] } else { &[g, -g] };
+
+    for &k in candidates {
+        // Reduce the dimension by k (exact by construction).
+        let mut base_dim = [0i16; 8];
+        for (b, &e) in base_dim.iter_mut().zip(exponents.0.iter()) {
+            *b = e / k;
+        }
+
+        // Reduce the scale by k; every component must divide exactly, otherwise
+        // this power does not correspond to a clean unit^k.
+        let mut base_scale = [0i16; 4];
+        let mut scale_ok = true;
+        for (b, &s) in base_scale.iter_mut().zip(scale_factors.0.iter()) {
+            if s % k != 0 {
+                scale_ok = false;
+                break;
+            }
+            *b = s / k;
+        }
+        if !scale_ok {
+            continue;
+        }
+        let base_scale = ScaleExponents(base_scale);
+
+        // Never let a negated power shadow a unit that is itself exactly named
+        // at this dimension and scale: `V/A` is `Ω`, not `S⁻¹` (and a bare
+        // siemens is `S`, not `Ω⁻¹`). The exact (k = 1) match is produced by the
+        // dimension-name lookup in the caller, which runs *after* this pass, so
+        // we must decline the reciprocal here and let that path win.
+        if k < 0
+            && Dimension::find_dimension_by_exponents(exponents).is_some_and(|dim| {
+                dim.units
+                    .iter()
+                    .any(|u| u.scale == scale_factors && u.conversion_factor == 1.0)
+            })
+        {
+            continue;
+        }
+
+        if let Some(dim) = Dimension::find_dimension_by_exponents(DynDimensionExponents(base_dim))
+            && let Some(unit) = dim
+                .units
+                .iter()
+                .find(|u| u.scale == base_scale && u.conversion_factor == 1.0)
+            {
+                let symbol = if long_name {
+                    unit.name
+                } else {
+                    unit.symbols.first().copied().unwrap_or("?")
+                };
+                return Some(format!(
+                    "{}{}",
+                    symbol,
+                    crate::to_unicode_superscript(k, false)
+                ));
+            }
+    }
+
+    None
+}
+
+fn gcd_i16(a: i16, b: i16) -> i16 {
+    let (mut a, mut b) = (a.abs(), b.abs());
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a
 }
 
 /// Calculate the storage unit name from scale factors and dimension exponents
@@ -141,13 +281,12 @@ pub fn generate_systematic_unit_name_with_scale_factors(
     let is_pure = exponents.iter().filter(|&exp| *exp != 0).count() == 1;
 
     // For pure units, first try to find a unit literal that matches the scale factors
-    if is_pure {
-        if let Some(unit_name) =
+    if is_pure
+        && let Some(unit_name) =
             lookup_unit_literal_by_scale_factors(&exponents, scale_factors, long_name)
         {
             return unit_name.to_string();
         }
-    }
 
     // For compound units, pass scale factors to help match the correct units
     // Fall back to the original logic but with scale factors
@@ -543,12 +682,14 @@ fn format_float_with_sig_figs(value: f64, sig_figs: usize) -> String {
 
     let abs_value = value.abs();
     let magnitude = abs_value.log10().floor() as i32;
-    let scale_factor = 10_f64.powi(sig_figs as i32 - 1 - magnitude as i32);
+    let scale_factor = 10_f64.powi(sig_figs as i32 - 1 - magnitude);
 
     let rounded = (value * scale_factor).round() / scale_factor;
 
     // Format with appropriate precision
-    let formatted = if magnitude >= 0 {
+    
+
+    if magnitude >= 0 {
         // For values >= 1, show up to sig_figs digits total
         let precision = (sig_figs as i32 - magnitude - 1).max(0) as usize;
         format!("{:.precision$}", rounded, precision = precision)
@@ -559,9 +700,7 @@ fn format_float_with_sig_figs(value: f64, sig_figs: usize) -> String {
             rounded,
             precision = (sig_figs as i32 + magnitude.abs()) as usize
         )
-    };
-
-    formatted
+    }
 }
 
 /// Get SI prefix for a given power of 10
@@ -578,6 +717,19 @@ fn get_si_prefix(power_of_10: i16, long_name: bool) -> Option<&'static str> {
         })
 }
 
+/// Index of the angle dimension within the 8-element base-dimension vector.
+const ANGLE_DIMENSION_INDEX: usize = 7;
+
+/// Raise a scale vector to the integer power `k` (multiply every prime exponent).
+fn scale_pow(scale: ScaleExponents, k: i16) -> ScaleExponents {
+    ScaleExponents([
+        scale.0[0] * k,
+        scale.0[1] * k,
+        scale.0[2] * k,
+        scale.0[3] * k,
+    ])
+}
+
 /// Generate systematic unit name for composite dimensions
 /// This is a public function that can be used by the main crate's prettyprint module
 pub fn generate_systematic_composite_unit_name(
@@ -587,26 +739,23 @@ pub fn generate_systematic_composite_unit_name(
     generate_systematic_composite_unit_name_with_scale(dimension_exponents, None, long_name)
 }
 
-/// Generate systematic unit name for composite dimensions with optional scale factors
-/// When scale factors are provided, tries to match them to the correct unit for each dimension
-pub fn generate_systematic_composite_unit_name_with_scale(
-    dimension_exponents: DynDimensionExponents,
+/// Render the base-dimension factors of `exponents` as individual `unit^exp`
+/// parts (one per non-zero base dimension), applying scale-matched unit
+/// selection, power-aware angular attribution, and the compound-context g→kg
+/// fix-up. Factored out of `generate_systematic_composite_unit_name_with_scale`
+/// so the composite pre-pass can render its residual through the same logic.
+///
+/// `is_compound` is passed by the caller rather than inferred locally: when a
+/// composite has been peeled off (`V·s`) the residual may itself be a single
+/// base dimension yet still lives in a compound context, which is what decides
+/// the `g → kg` mass fix-up.
+fn base_dimension_parts(
+    exponents: [i16; 8],
     scale_factors: Option<ScaleExponents>,
     long_name: bool,
-) -> String {
-    let exponents = dimension_exponents.0;
-
-    // Check if all exponents are unknown
-    if exponents.iter().all(|&exp| exp == i16::MIN) {
-        return "?".to_string();
-    }
-
-    // Check if this is a pure dimension (only one non-zero exponent)
-    let is_pure = exponents.iter().filter(|&exp| *exp != 0).count() == 1;
-
-    // Generate unit parts for each dimension using simple string concatenation
-    let mut result = String::new();
-    let mut first = true;
+    is_compound: bool,
+) -> Vec<String> {
+    let mut parts: Vec<String> = Vec::new();
 
     for (index, &exp) in exponents.iter().enumerate() {
         if exp == 0 {
@@ -619,23 +768,51 @@ pub fn generate_systematic_composite_unit_name_with_scale(
             if let Some(dimension) = Dimension::BASIS.get(index) {
                 // If scale factors are provided, try to find a matching unit
                 let matched_unit = if let Some(scale) = scale_factors {
-                    // For compound units, try to match the aggregate scale factors
-                    // This works when the scale factors come from a single dimension (e.g., deg/m where deg has the scale)
-                    dimension
-                        .units
-                        .iter()
-                        .find(|unit| unit.scale == scale && unit.conversion_factor == 1.0)
-                        // If no exact match, try identity scale (for cases like deg/m where meter has identity scale)
-                        .or_else(|| {
-                            if scale == ScaleExponents::IDENTITY {
-                                None // Already tried identity above
-                            } else {
+                    if index == ANGLE_DIMENSION_INDEX && exp != i16::MIN {
+                        // Power-aware angular attribution. An alternate angular
+                        // unit is distinguished by a scale factor (rot = 2π,
+                        // deg = π/180, …), so a power `expᵗʰ` scales that factor
+                        // by `exp` and no longer matches the exp-1 registration —
+                        // which is why `s/rot` used to print as `(1/2π)(s·rad⁻¹)`.
+                        // Pick the angular unit `u` whose scaled contribution
+                        // `exp · scale(u)` accounts for the *entire* aggregate
+                        // scale (i.e. every non-angular slot is at identity), so
+                        // the result is `s·rot⁻¹` with no leftover coefficient.
+                        // If a non-angular prefix is also present nothing matches
+                        // and we fall back to radian, leaving the existing prefix
+                        // path to render the coefficient as before.
+                        dimension
+                            .units
+                            .iter()
+                            .find(|unit| {
+                                unit.conversion_factor == 1.0
+                                    && scale_pow(unit.scale, exp) == scale
+                            })
+                            .or_else(|| {
                                 dimension.units.iter().find(|unit| {
                                     unit.scale == ScaleExponents::IDENTITY
                                         && unit.conversion_factor == 1.0
                                 })
-                            }
-                        })
+                            })
+                    } else {
+                        // For compound units, try to match the aggregate scale factors
+                        // This works when the scale factors come from a single dimension (e.g., deg/m where deg has the scale)
+                        dimension
+                            .units
+                            .iter()
+                            .find(|unit| unit.scale == scale && unit.conversion_factor == 1.0)
+                            // If no exact match, try identity scale (for cases like deg/m where meter has identity scale)
+                            .or_else(|| {
+                                if scale == ScaleExponents::IDENTITY {
+                                    None // Already tried identity above
+                                } else {
+                                    dimension.units.iter().find(|unit| {
+                                        unit.scale == ScaleExponents::IDENTITY
+                                            && unit.conversion_factor == 1.0
+                                    })
+                                }
+                            })
+                    }
                 } else {
                     None
                 };
@@ -651,9 +828,8 @@ pub fn generate_systematic_composite_unit_name_with_scale(
             };
 
         // For compound units, convert g to kg for mass terms
-        let is_compound_unit = exponents.iter().filter(|&&exp| exp != 0).count() > 1;
         let (adjusted_unit_name, adjusted_unit_symbol) =
-            if is_compound_unit && base_scale_offset != 0 && index == 0 {
+            if is_compound && base_scale_offset != 0 && index == 0 {
                 // This is a compound unit with mass dimension (index 0) that has a scale offset
                 if long_name {
                     match unit_name {
@@ -682,17 +858,178 @@ pub fn generate_systematic_composite_unit_name_with_scale(
             format!("{}{}", base_name, crate::to_unicode_superscript(exp, false))
         };
 
-        if !first {
-            result.push_str("·");
-        }
-        result.push_str(&unit_part);
-        first = false;
+        parts.push(unit_part);
     }
 
-    if is_pure {
-        result
+    parts
+}
+
+/// Cost of a dimension vector as `(factors, magnitude)`: the number of distinct
+/// non-zero base dimensions and the sum of their absolute exponents. Compared
+/// lexicographically, so factor count dominates (a shorter product always wins)
+/// but exponent magnitude breaks ties — which is what lets `s²·rot⁻¹` (mag 3)
+/// lose to `s·rot⁻¹` (mag 2) at equal factor count.
+fn dimension_cost(exponents: &[i16; 8]) -> (usize, i32) {
+    let factors = exponents.iter().filter(|&&e| e != 0).count();
+    let magnitude = exponents.iter().map(|&e| (e as i32).abs()).sum();
+    (factors, magnitude)
+}
+
+/// Try to rewrite a compound dimension vector as a single identity-scale
+/// composite unit (`V`, `J`, `N`, …) times a base-dimension residual, when
+/// doing so produces a strictly shorter product. Returns the rendered
+/// composite part (`C` or `Cᵏ`) together with the residual dimension vector,
+/// which the caller renders through [`base_dimension_parts`].
+///
+/// This resolves the "partial factorization" wart where e.g. `V·s·rot⁻¹` would
+/// otherwise expand all the way to `kg·m²·s⁻²·A⁻¹·rot⁻¹`. The dictionary is the
+/// set of identity-scale composites carrying at least two base dimensions, and
+/// only the powers `k ∈ {+1, −1}` are considered. Exact composites and pure
+/// powers (empty residual) are deliberately skipped — those go through the
+/// dimension-name lookup and `try_unit_power_literal`, which keep SI prefixes.
+///
+/// The policy has two levels, both using [`dimension_cost`] =
+/// `(factors, magnitude)` with the composite contributing one factor at
+/// magnitude `|k| = 1`:
+///
+/// 1. **Acceptance is factor-count-strict.** A composite is only peeled when it
+///    yields fewer factors than the baseline. Magnitude alone must not justify
+///    it, or acceleration (`m·s⁻²`, 2 factors) would flip to `N·kg⁻¹` (also 2
+///    factors) merely because the residual exponent is smaller.
+/// 2. **Ties break lexicographically on the full cost**, so exponent magnitude
+///    decides between accepted candidates. This keeps neighbouring quantities
+///    consistent: `V·s/rot` → `Wb·rot⁻¹` and `V·s²/rot` → `Wb·s·rot⁻¹` both
+///    settle on the weber basis (`Wb`'s residual `s·rot⁻¹` beats `V`'s
+///    `s²·rot⁻¹`), rather than the latter tying at `V·s²·rot⁻¹`.
+///
+/// Ambiguity is still inherent (an overcomplete dictionary: `V·s` is also `Wb`,
+/// `J/A`, …), so any remaining ties fall back to fixed policy: prefer the
+/// composite that absorbs the most base dimensions (highest arity), then the
+/// fixed `Dimension::ALL` order for determinism. The extracted composite is
+/// scale-free, so the entire aggregate scale flows to the residual (which is
+/// why a prefix on a compound may land on an unexpected residual factor).
+fn try_extract_composite(
+    exponents: [i16; 8],
+    long_name: bool,
+) -> Option<(String, [i16; 8])> {
+    // Powers of an unknown are meaningless (and would overflow below).
+    if exponents.contains(&i16::MIN) {
+        return None;
+    }
+
+    let baseline = dimension_cost(&exponents);
+    if baseline.0 < 2 {
+        return None; // nothing to factor
+    }
+
+    // best = (cost, arity, rendered composite part, residual)
+    let mut best: Option<((usize, i32), usize, String, [i16; 8])> = None;
+
+    for dim in Dimension::ALL {
+        let c = dim.exponents.0;
+        let arity = c.iter().filter(|&&e| e != 0).count();
+        if arity < 2 {
+            // Base dimensions and single-dimension composites (area, volume,
+            // frequency) are the base decomposition's / pure-power's job.
+            continue;
+        }
+        // Canonical identity-scale SI unit for this composite (skip composites
+        // with no named identity-scale unit, e.g. mass densities).
+        let unit = match dim
+            .units
+            .iter()
+            .find(|u| u.scale == ScaleExponents::IDENTITY && u.conversion_factor == 1.0)
+        {
+            Some(u) => u,
+            None => continue,
+        };
+
+        for &k in &[1i16, -1] {
+            let mut residual = [0i16; 8];
+            for i in 0..8 {
+                residual[i] = exponents[i] - k * c[i];
+            }
+            // Empty residual is an exact composite / pure power; leave it to the
+            // prefix-aware paths.
+            if residual.iter().all(|&e| e == 0) {
+                continue;
+            }
+            // The composite contributes one factor at magnitude |k| = 1.
+            let (res_factors, res_magnitude) = dimension_cost(&residual);
+            let cost = (1 + res_factors, 1 + res_magnitude);
+            // Acceptance is factor-count-strict: we only peel a composite when
+            // it produces a genuinely *shorter* product. Magnitude alone must
+            // not justify extraction, or acceleration (`m·s⁻²`, 2 factors) would
+            // flip to `N·kg⁻¹` (also 2 factors, but lower residual magnitude).
+            // Magnitude only breaks ties *between* accepted candidates below.
+            if cost.0 >= baseline.0 {
+                continue;
+            }
+
+            let symbol = if long_name { unit.name } else { unit.symbols[0] };
+            let part = if k == 1 {
+                symbol.to_string()
+            } else {
+                format!("{}{}", symbol, crate::to_unicode_superscript(k, false))
+            };
+
+            let better = match &best {
+                None => true,
+                Some((best_cost, best_arity, _, _)) => {
+                    cost < *best_cost || (cost == *best_cost && arity > *best_arity)
+                }
+            };
+            if better {
+                best = Some((cost, arity, part, residual));
+            }
+        }
+    }
+
+    best.map(|(_, _, part, residual)| (part, residual))
+}
+
+/// Generate systematic unit name for composite dimensions with optional scale factors
+/// When scale factors are provided, tries to match them to the correct unit for each dimension
+pub fn generate_systematic_composite_unit_name_with_scale(
+    dimension_exponents: DynDimensionExponents,
+    scale_factors: Option<ScaleExponents>,
+    long_name: bool,
+) -> String {
+    let exponents = dimension_exponents.0;
+
+    // Check if all exponents are unknown
+    if exponents.iter().all(|&exp| exp == i16::MIN) {
+        return "?".to_string();
+    }
+
+    // Partial-factorization pre-pass: peel off a single named composite unit
+    // (V, J, N, …) when it strictly reduces the factor count, then render the
+    // residual base dimensions through the shared per-dimension logic.
+    let mut parts: Vec<String> = Vec::new();
+    let (residual, composite_extracted) =
+        if let Some((composite_part, residual)) = try_extract_composite(exponents, long_name) {
+            parts.push(composite_part);
+            (residual, true)
+        } else {
+            (exponents, false)
+        };
+
+    // A peeled composite always leaves us in a compound context (composite +
+    // non-empty residual); otherwise fall back to the plain non-zero count.
+    let is_compound =
+        composite_extracted || residual.iter().filter(|&&e| e != 0).count() > 1;
+
+    parts.extend(base_dimension_parts(
+        residual,
+        scale_factors,
+        long_name,
+        is_compound,
+    ));
+
+    if parts.len() == 1 {
+        parts.pop().unwrap()
     } else {
-        format!("({})", result)
+        format!("({})", parts.join("·"))
     }
 }
 

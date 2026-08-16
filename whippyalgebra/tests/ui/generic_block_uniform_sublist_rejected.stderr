@@ -1,0 +1,7 @@
+error: generic_block(uniform, ..): a uniform assembly has no dimension lists — drop the per-track sublists and write bare sizes, e.g. `uniform, rows(N; M), cols(N; M)`
+  --> tests/ui/generic_block_uniform_sublist_rejected.rs:11:1
+   |
+11 | #[generic_block(uniform, rows(N, RowA; M, RowB), cols(N; M))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `generic_block` (in Nightly builds, run with -Z macro-backtrace for more info)

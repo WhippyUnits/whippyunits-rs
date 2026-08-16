@@ -122,8 +122,10 @@ impl ValueMacroInput {
         // Construct the target unit type directly (like unit! macro does)
         let target_unit_type = quote! {
             whippyunits::quantity::Quantity<
-                whippyunits::quantity::Scale<whippyunits::quantity::_2<#p2>, whippyunits::quantity::_3<#p3>, whippyunits::quantity::_5<#p5>, whippyunits::quantity::_Pi<#pi>>,
-                whippyunits::quantity::Dimension<whippyunits::quantity::_M<#mass_exp>, whippyunits::quantity::_L<#length_exp>, whippyunits::quantity::_T<#time_exp>, whippyunits::quantity::_I<#current_exp>, whippyunits::quantity::_Θ<#temp_exp>, whippyunits::quantity::_N<#amount_exp>, whippyunits::quantity::_J<#lum_exp>, whippyunits::quantity::_A<#angle_exp>>,
+                whippyunits::quantity::Unit<
+                    whippyunits::quantity::Scale<whippyunits::quantity::_2<#p2>, whippyunits::quantity::_3<#p3>, whippyunits::quantity::_5<#p5>, whippyunits::quantity::_Pi<#pi>>,
+                    whippyunits::quantity::Dimension<whippyunits::quantity::_M<#mass_exp>, whippyunits::quantity::_L<#length_exp>, whippyunits::quantity::_T<#time_exp>, whippyunits::quantity::_I<#current_exp>, whippyunits::quantity::_Θ<#temp_exp>, whippyunits::quantity::_N<#amount_exp>, whippyunits::quantity::_J<#lum_exp>, whippyunits::quantity::_A<#angle_exp>>
+                >,
                 #storage_type_ty,
                 #brand_type_ty
             >
@@ -169,7 +171,7 @@ impl ValueMacroInput {
                     const _: () = {
                         #doc_structs
                     };
-                    let storage_value = (whippyunits::api::#rescale_fn(#quantity) as whippyunits::unit!(#storage_unit_ident, #storage_type_ty, #brand_type_ty)).unsafe_value;
+                    let storage_value = (whippyunits::api::#rescale_fn(#quantity) as whippyunits::qty!(#storage_unit_ident, #storage_type_ty, #brand_type_ty)).unsafe_value;
                     (storage_value as f64 - #affine_offset) as #storage_type_ty
                 }
             }

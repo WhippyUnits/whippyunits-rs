@@ -2,10 +2,7 @@
 //!
 //! This example demonstrates basic arithmetic operations with whippyunits quantities.
 
-#![cfg_attr(has_generic_const_exprs, feature(generic_const_exprs))]
-#![cfg_attr(has_generic_const_exprs, allow(incomplete_features))]
-
-use whippyunits::unit;
+use whippyunits::qty;
 
 #[culit::culit(whippyunits::default_declarators::literals)]
 fn main() {
@@ -21,17 +18,17 @@ fn main() {
     println!("\n2. Subtraction:");
     let time1 = 30.0s;
     let time2 = 5.0s;
-    let elapsed: unit!(s) = time1 - time2;
+    let elapsed: qty!(s) = time1 - time2;
     println!("   {} - {} = {}", time1, time2, elapsed);
 
     println!("\n3. Scalar Multiplication:");
     let length = 5.0m;
-    let scaled_length: unit!(m) = length * 3.0;
+    let scaled_length: qty!(m) = length * 3.0;
     println!("   {} * 3.0 = {}", length, scaled_length);
 
     println!("\n4. Scalar Division:");
     let distance = 10.0m;
-    let half_distance: unit!(m) = distance / 2.0;
+    let half_distance: qty!(m) = distance / 2.0;
     println!("   {} / 2.0 = {}", distance, half_distance);
 
     println!("\n5. Quantity Multiplication:");
