@@ -383,6 +383,11 @@ where
 /// assert!((a.unsafe_value - 1000.0).abs() < 1e-9);
 /// assert!((b.unsafe_value - 2000.0).abs() < 1e-9);
 /// ```
+///
+/// Works without `alloc`: the per-row/per-column factor buffers are nalgebra
+/// owned vectors, which use inline (stack) storage for a statically-sized axis.
+/// (A dynamically-sized axis allocates its buffer through nalgebra as usual,
+/// which itself already requires `alloc`.)
 pub fn rescale_matrix<RowDims, ColDims, NewRowDims, NewColDims, Brand, T, R, C, S>(
     matrix: &MixedUnitMatrix<RowDims, ColDims, nalgebra::Matrix<T, R, C, S>, Brand>,
 ) -> MixedUnitMatrix<NewRowDims, NewColDims, nalgebra::OMatrix<T, R, C>, Brand>
@@ -393,18 +398,24 @@ where
     S: nalgebra::RawStorage<T, R, C>,
     RowDims: RescaleFactors<NewRowDims>,
     ColDims: RescaleFactors<NewColDims>,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<R, C>,
+    // `Allocator<R, C>` backs the result matrix; `Allocator<R>` / `Allocator<C>`
+    // (the `C = U1` vector case) back the two factor buffers below. Every
+    // concrete shape satisfies all three automatically.
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<R, C>
+        + nalgebra::allocator::Allocator<R>
+        + nalgebra::allocator::Allocator<C>,
 {
     let inner = matrix.nalgebra();
     let (r, c) = inner.shape_generic();
-    let (nrows, ncols) = (r.value(), c.value());
 
     // Materialize the per-row and per-column scale factors from the type-level
-    // dimension change. Each is O(n); they seed the O(n²) rescale below.
-    let mut row_factors = vec![0.0f64; nrows];
-    let mut col_factors = vec![0.0f64; ncols];
-    <RowDims as RescaleFactors<NewRowDims>>::write_factors(&mut row_factors);
-    <ColDims as RescaleFactors<NewColDims>>::write_factors(&mut col_factors);
+    // dimension change. Each is O(n); they seed the O(n²) rescale below. Using
+    // nalgebra owned vectors (inline storage for a static axis) keeps this
+    // `alloc`-free, unlike a `Vec`.
+    let mut row_factors = nalgebra::OVector::<f64, R>::zeros_generic(r, nalgebra::Const::<1>);
+    let mut col_factors = nalgebra::OVector::<f64, C>::zeros_generic(c, nalgebra::Const::<1>);
+    <RowDims as RescaleFactors<NewRowDims>>::write_factors(row_factors.as_mut_slice());
+    <ColDims as RescaleFactors<NewColDims>>::write_factors(col_factors.as_mut_slice());
 
     let out = nalgebra::OMatrix::<T, R, C>::from_fn_generic(r, c, |i, j| {
         let factor = <T as num_traits::FromPrimitive>::from_f64(row_factors[i] / col_factors[j])
@@ -565,6 +576,10 @@ where
     /// This is the continuous→discrete bridge `A_d = exp(A_c · dt)`. A continuous
     /// rate map is `<Dims/T, Dims>` and so is not an endomorphism; scaling by the
     /// timestep `dt` promotes it to `<Dims, Dims>` before exponentiating.
+    // nalgebra's matrix exponential (scaling-and-squaring with a Padé step)
+    // lives behind its `std` feature, so this bridge is `std`-only. `pow` above
+    // has no such dependency and stays available in `no_std` builds.
+    #[cfg(feature = "std")]
     pub fn exp(&self) -> MixedUnitMatrix<Dims, Dims, nalgebra::OMatrix<T, D, D>, Brand> {
         // `exp` is inherent to owned `OMatrix`, so `clone_owned` is the storage
         // conversion (not a redundant copy) for our generic `S`. It's an O(n²)

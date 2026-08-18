@@ -13,6 +13,12 @@ use crate::dims::{DCons, DNil};
 use crate::index::ShapeIndex;
 
 mod construction;
+// The matrix `Display` renders each cell to a `String` and aligns columns via
+// intermediate `Vec`s, so it lives behind `alloc` (it also leans on
+// whippyunits' `UnitDisplayExt`/`UnitLabel`, which are themselves `alloc`-gated).
+// Without `alloc` the matrix still has the derived-style `Debug` from this
+// module. See the crate `alloc`/`std` features.
+#[cfg(feature = "alloc")]
 mod display;
 mod ops;
 

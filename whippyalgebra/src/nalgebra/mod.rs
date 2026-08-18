@@ -71,8 +71,15 @@ pub use whippyalgebra_macros::{generic_block, generic_matrix};
 // these come from the adapter rather than the `nalgebra` crate directly.
 #[doc(no_inline)]
 pub use ::nalgebra::{
-    Const, DMatrix, DVector, DefaultAllocator, Dyn, Matrix, OMatrix, OVector, SMatrix, SVector, U1,
+    Const, DefaultAllocator, Dyn, Matrix, OMatrix, OVector, SMatrix, SVector, U1,
 };
+// The dynamically sized aliases are backed by nalgebra's `VecStorage`, which
+// only exists with heap allocation, so they follow our `alloc` feature. `Dyn`
+// (the dimension marker) is allocation-free and stays available above, so
+// generic `Dyn`-shaped signatures still compile without `alloc`.
+#[cfg(feature = "alloc")]
+#[doc(no_inline)]
+pub use ::nalgebra::{DMatrix, DVector};
 
 /// The nalgebra crate itself, re-exported for macro expansions (both the
 /// declarative constructors here and the `generic_*` attributes) to name

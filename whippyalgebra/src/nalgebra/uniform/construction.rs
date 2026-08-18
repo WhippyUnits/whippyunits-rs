@@ -4,6 +4,11 @@ use crate::nalgebra::*;
 use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
 
+// Heap `Vec` for the owned-`Vec` / columns / rows uniform constructors below;
+// each is `alloc`-gated, so the import is too.
+#[cfg(feature = "alloc")]
+use crate::alloc::Vec;
+
 use whippyunits::quantity::Quantity;
 use whippyunits::{DivUnit, UnitDiv};
 
@@ -192,6 +197,11 @@ where
     /// Builds a uniform matrix from a column-major `Vec` of raw scalars, each
     /// read as a magnitude in `U`. See [`from_row_slice`](Self::from_row_slice)
     /// for the unit contract.
+    ///
+    /// Requires the `alloc` feature (it consumes an owned `Vec`); without it use
+    /// [`from_column_slice`](Self::from_column_slice) or
+    /// [`from_iterator`](Self::from_iterator).
+    #[cfg(feature = "alloc")]
     pub fn from_vec(data: Vec<T>) -> Self {
         UniformUnitMatrix::from_nalgebra(nalgebra::OMatrix::<T, R, C>::from_vec_generic(
             R::name(),
@@ -216,6 +226,9 @@ where
 
     /// Builds a uniform matrix from its columns — each a uniform column vector of
     /// the same unit `U`. Panics if the number of columns disagrees with `C`.
+    ///
+    /// Requires the `alloc` feature (the columns are cloned into an owned `Vec`).
+    #[cfg(feature = "alloc")]
     pub fn from_columns<Sc>(
         columns: &[UniformUnitMatrix<U, nalgebra::Matrix<T, R, nalgebra::U1, Sc>, Brand>],
     ) -> Self
@@ -229,6 +242,9 @@ where
 
     /// Builds a uniform matrix from its rows — each a uniform row vector of the
     /// same unit `U`. Panics if the number of rows disagrees with `R`.
+    ///
+    /// Requires the `alloc` feature (the rows are cloned into an owned `Vec`).
+    #[cfg(feature = "alloc")]
     pub fn from_rows<Sr>(
         rows: &[UniformUnitMatrix<U, nalgebra::Matrix<T, nalgebra::U1, C, Sr>, Brand>],
     ) -> Self

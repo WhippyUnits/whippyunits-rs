@@ -36,7 +36,11 @@ libm = "0.2"
 bytemuck = "1"
 whippyunits-proc-macros = { path = "proc-macros", version = "0.3.0" }
 whippyunits-core = { path = "whippyunits-core", version = "0.3.0" }
-num-traits = "0.2"
+# `default-features = false` drops num-traits' `std` (on by default), which would
+# otherwise be unified onto every downstream no_std build. Only `NumCast` is used
+# here (a core-only trait), so the std impls are not needed; `std` is forwarded
+# back through this crate's own `std` feature for downstream std builds.
+num-traits = { version = "0.2", default-features = false }
 culit = "0.6.0"
 op_result = "0.5.8"
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
@@ -49,7 +53,7 @@ typenum = "1"
 
 [features]
 default = ["std", "serde"]
-std = ["alloc"]
+std = ["alloc", "num-traits/std"]
 alloc = []
 serde = ["alloc", "dep:serde", "dep:serde_json", "dep:syn", "dep:proc-macro2", "dep:quote"]
 

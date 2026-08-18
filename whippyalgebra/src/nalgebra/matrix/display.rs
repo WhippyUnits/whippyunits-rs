@@ -3,6 +3,7 @@ use crate::nalgebra::*;
 
 use core::fmt;
 
+use crate::alloc::{String, ToString, Vec, format, vec};
 use whippyunits::api::{UnitDisplayExt, UnitLabel};
 use whippyunits::quantity::Quantity;
 use whippyunits::{DivUnit, UnitDiv};

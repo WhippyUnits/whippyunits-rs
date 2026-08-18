@@ -1,6 +1,10 @@
 // The `_Θ` dimension marker re-used from whippyunits trips the confusables
 // lint; it is intentional, so the lint is allowed crate-wide.
 #![allow(mixed_script_confusables)]
+// Mirrors whippyunits: the crate is `no_std` unless the (default) `std` feature
+// is on. Heap-using paths (matrix `Display`, dynamic-matrix constructors) are
+// gated behind `alloc`, which `std` implies.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 //! WhippyAlgebra: zero-cost unit-safe linear algebra, powered by [whippyunits](https://docs.rs/whippyunits).
 //!
@@ -35,12 +39,43 @@
 //!
 //! - [nalgebra](https://docs.rs/nalgebra) (enabled by default)
 //!
-//! Backends are feature-gated; disable the default to depend only on the
-//! backend-agnostic unit machinery:
+//! Backends are feature-gated; disable the `nalgebra` feature to depend only on
+//! the backend-agnostic unit machinery:
 //!
 //! ```toml
 //! [dependencies]
-//! whippyalgebra = { version = "0.1.0", features = ["nalgebra"] }
+//! whippyalgebra = { version = "0.1.1", default-features = false, features = ["std"] }
+//! ```
+//!
+//! # `no_std`
+//!
+//! Like [whippyunits](https://docs.rs/whippyunits), this crate is `#![no_std]`
+//! when its default `std` feature is turned off. The features are additive:
+//!
+//! - **`std`** (default) — full standard library. Adds nalgebra's
+//!   `matrixmultiply` fast path and the `std`-only matrix exponential
+//!   ([`exp`](crate::nalgebra::MixedUnitMatrix::exp)).
+//! - **`alloc`** — heap allocation without `std` (implied by `std`). Required
+//!   for matrix [`Display`](core::fmt::Display) (each cell is rendered to a
+//!   `String`), dynamically sized matrices (`DMatrix`/`DVector`, `from_dyn`),
+//!   and the `Vec`/columns/rows uniform constructors.
+//! - neither — a `no_std`, no-alloc build. The statically sized, unit-checked
+//!   core (construction, arithmetic, decompositions, element access, and
+//!   [`rescale_matrix`](crate::nalgebra::rescale_matrix)) keeps working; the
+//!   allocation-dependent items above are compiled out, so matrices print via
+//!   [`Debug`](core::fmt::Debug) (delegating to the inner matrix) rather than
+//!   the unit-aware [`Display`](core::fmt::Display).
+//!
+//! Floating-point math resolves in every configuration: the `nalgebra` backend
+//! always enables nalgebra's `libm` feature, so `f32`/`f64` satisfy
+//! `ComplexField` even without `std`.
+//!
+//! ```toml
+//! [dependencies]
+//! # no_std, no-alloc:
+//! whippyalgebra = { version = "0.1.0", default-features = false, features = ["nalgebra"] }
+//! # no_std + alloc (matrix Display, dynamic matrices):
+//! whippyalgebra = { version = "0.1.0", default-features = false, features = ["alloc", "nalgebra"] }
 //! ```
 //!
 //! # Matrix types
@@ -133,6 +168,19 @@
 //! > and Engineering*, Springer-Verlag New York, 1995. ISBN 0-387-94417-6.
 //! > DOI: [10.1007/978-1-4612-4208-6](https://doi.org/10.1007/978-1-4612-4208-6).
 //! > See also the author's [overview page](http://georgehart.com/research/multanal.html).
+
+// In a `no_std + alloc` build we still need the `alloc` crate's `Vec`/`String`/
+// `format!` for matrix pretty-printing; under `std` those come from `std`
+// instead (see the `alloc` shim module). Not needed when `std` re-exports them.
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc as alloc_crate;
+
+// Unifies the `alloc`-vs-`std` import path for heap types, so `alloc`-gated code
+// (currently the matrix `Display`) can `use crate::alloc::*` regardless of which
+// feature supplies them.
+#[cfg(feature = "alloc")]
+#[doc(hidden)]
+mod alloc;
 
 pub mod dims;
 pub mod entry;

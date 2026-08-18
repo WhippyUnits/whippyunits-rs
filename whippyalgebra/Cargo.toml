@@ -1,6 +1,6 @@
 [package]
 name = "whippyalgebra"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,21 @@ categories = ["science", "mathematics"]
 readme = "README.md"
 
 [features]
-default = ["nalgebra"]
+default = ["std", "nalgebra"]
+# Standard library support. On by default; turning it off makes the crate
+# `#![no_std]`. `std` is additive over `alloc`: it enables everything `alloc`
+# does, plus std-only niceties in the dependency tree (e.g. nalgebra's
+# `matrixmultiply` fast path). Floating-point math still resolves in `no_std`
+# builds because the `nalgebra` backend always pulls in `libm`.
+std = ["alloc", "whippyunits/std", "num-traits/std", "nalgebra?/std"]
+# Heap allocation without the full standard library. Required for the matrix
+# `Display` (pretty-printing renders each cell to a `String`), for dynamically
+# sized matrices (`DMatrix`/`from_dyn` and the `nalgebra` allocator paths), and
+# for the `Vec`/columns/rows uniform constructors. Turning `alloc` off (and thus
+# `std`) drops those — most notably all matrix pretty-printing — while the
+# statically sized, unit-checked core keeps working. `Debug` (which delegates to
+# the inner matrix) is unaffected.
+alloc = ["whippyunits/alloc", "nalgebra?/alloc"]
 # The nalgebra backend adapter (`MixedUnitMatrix`, `UnitVector`, …) and the
 # `state_space` example. Disable it to depend only on the backend-agnostic unit
 # machinery (`dims`, `index`, `entry`) while a different linear-algebra backend
@@ -19,13 +33,17 @@ default = ["nalgebra"]
 nalgebra = ["dep:nalgebra"]
 
 [dependencies]
-whippyunits = { path = "..", version = "0.3.0" }
+whippyunits = { path = "..", version = "0.3.0", default-features = false }
 whippyalgebra-macros = { path = "../whippyalgebra-macros", version = "0.1.0" }
 # Type-level naturals + const-generic bridge for indexing/slicing dimension
 # lists. Shared with the rest of the stack (whippyunits-core uses it too), so we
 # don't maintain a parallel Peano encoding. `const-generics` gives `Const`/`U`.
 typenum = { version = "1", features = ["const-generics"] }
-nalgebra = { version = "0.33", optional = true }
+# `default-features = false` drops nalgebra's `std` (forwarded back via our own
+# `std` feature). `libm` is always on so `f32`/`f64` satisfy `ComplexField` in
+# `no_std` builds (it is a no-op fallback when `std` is also present); `macros`
+# keeps nalgebra's `matrix!`/`vector!` literal macros available.
+nalgebra = { version = "0.33", optional = true, default-features = false, features = ["macros", "libm"] }
 # Building a storage-type value from the `f64` scale factor in `rescale_matrix`
 # (via `FromPrimitive::from_f64`); this is nalgebra's own numeric-trait crate, a
 # supertrait of `ComplexField`, so it adds nothing new to the dependency tree.
