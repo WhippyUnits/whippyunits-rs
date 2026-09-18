@@ -189,6 +189,39 @@ impl InlayHintProcessor {
         Ok(())
     }
 
+    /// Build replacement `textEdits` seeding a `qty!(…)` annotation for a plain
+    /// `Quantity<…>` inlay hint.
+    ///
+    /// Standalone entry point for the Potemkin plugin, which has already
+    /// pretty-printed the label and only needs the structured edit. Given the
+    /// pretty-printed type text (without any leading `": "`), the hint's
+    /// `position`, and its existing `textEdits`, it returns a single replacement
+    /// edit inserting `: qty!(mm)` (or `: qty!(mm, i32)` for non-`f64`). Returns
+    /// `None` when no insertion range can be determined.
+    pub fn seeded_text_edits(
+        &self,
+        pretty_type: &str,
+        position: Option<&Value>,
+        existing: Option<&Value>,
+    ) -> Option<Vec<Value>> {
+        let (unit_part, datatype) = self.extract_unit_and_datatype(pretty_type);
+        let new_text = if datatype == "f64" {
+            format!(": qty!({})", unit_part)
+        } else {
+            format!(": qty!({}, {})", unit_part, datatype)
+        };
+
+        // Prefer the range of the server's own annotation edit; fall back to a
+        // zero-width range at the hint position.
+        let range = existing
+            .and_then(|e| e.as_array())
+            .and_then(|arr| arr.first())
+            .and_then(|first| first.get("range").cloned())
+            .or_else(|| position.map(|p| json!({ "start": p, "end": p })))?;
+
+        Some(vec![json!({ "range": range, "newText": new_text })])
+    }
+
     /// Add a qty! macro text edit to the hint
     fn add_seeded_unit_macro_text_edit(
         &self,

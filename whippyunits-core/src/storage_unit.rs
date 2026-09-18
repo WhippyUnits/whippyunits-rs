@@ -15,6 +15,13 @@ use alloc::string::ToString;
 #[cfg(not(test))]
 use alloc::vec::Vec;
 
+// Provides `f64::{powi, log10, round, floor, abs}` on `no_std` targets whose
+// `core` lacks the inherent methods (bare-metal), via `libm`. Where `core`
+// already supplies them (std-capable hosts) the inherent methods take
+// precedence and this import is inert — hence `allow(unused_imports)`.
+#[allow(unused_imports)]
+use num_traits::Float;
+
 /// Configuration for unit literal generation
 #[derive(Debug, Clone, Copy)]
 pub struct UnitLiteralConfig {

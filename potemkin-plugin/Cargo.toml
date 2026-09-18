@@ -1,0 +1,20 @@
+[package]
+name = "whippyunits-potemkin-plugin"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Potemkin LSP-proxy plugin that pretty-prints whippyunits types"
+
+[[bin]]
+name = "whippyunits-potemkin-plugin"
+path = "src/main.rs"
+
+[dependencies]
+potemkin-plugin-api = { path = "../../potemkin/crates/potemkin-plugin-api" }
+whippyunits-lsp-proxy = { path = "../lsp-proxy" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Detach from the whippyunits workspace: this crate bridges two workspaces
+# (whippyunits + potemkin) and shouldn't perturb either root's build.
+[workspace]

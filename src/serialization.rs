@@ -33,9 +33,10 @@
 //!             - All terms trailing the division symbol are considered to be in the denominator
 //!
 //! Runtime parsing of unit literal expressions leverages the same parser as the [unit!](crate::unit!) macro;
-//! using `from_string` or `from_json` means your binary will include the `syn` crate as a dependency.  
-//! This is technically no-std, but it is fairly heavyweight for a no-std library, and is not appropriate
-//! for sufficiently resource-constrained environments.
+//! using `from_string` or `from_json` means your binary will include the `syn`/`proc-macro2` crates as
+//! dependencies. Those crates are not `no_std`, so the `serde` feature (which is what enables this module)
+//! requires `std` and is not available in `no_std`/`no_alloc` builds. It is also fairly heavyweight, and is
+//! not appropriate for sufficiently resource-constrained environments.
 
 use crate::api::aggregate_scale_factor_float;
 use crate::print::name_lookup::generate_systematic_unit_name_with_format;

@@ -986,6 +986,7 @@ dependencies = [
 name = "whippyunits-core"
 version = "0.3.0"
 dependencies = [
+ "num-traits",
  "proc-macro2",
  "syn",
  "typenum",

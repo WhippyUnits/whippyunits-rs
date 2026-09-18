@@ -25,7 +25,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/WhippyUnits/whippyunits-rs"
 description = "A zero-cost, pure rust units-of-measure library for applied computation"
 keywords = ["units", "measurement", "dimensional", "SI", "whippyunits"]
-categories = ["science", "no-std", "development-tools"]
+categories = ["science", "no-std::no-alloc", "development-tools"]
 readme = "README.md"
 
 [dependencies]
@@ -35,12 +35,18 @@ syn = { version = "2.0", features = ["full"], optional = true }
 libm = "0.2"
 bytemuck = "1"
 whippyunits-proc-macros = { path = "proc-macros", version = "0.3.0" }
-whippyunits-core = { path = "whippyunits-core", version = "0.3.0" }
+# `default-features = false` drops whippyunits-core's `parsing` feature (which
+# pulls in the non-`no_std` `syn`/`proc-macro2`). It is re-enabled through this
+# crate's own `serde` feature, which is the only path that parses unit strings
+# at runtime.
+whippyunits-core = { path = "whippyunits-core", version = "0.3.0", default-features = false }
 # `default-features = false` drops num-traits' `std` (on by default), which would
-# otherwise be unified onto every downstream no_std build. Only `NumCast` is used
-# here (a core-only trait), so the std impls are not needed; `std` is forwarded
-# back through this crate's own `std` feature for downstream std builds.
-num-traits = { version = "0.2", default-features = false }
+# otherwise be unified onto every downstream no_std build. `NumCast` (a core-only
+# trait) is always used; the `libm` feature additionally supplies the `Float`
+# trait so the `alloc`-gated pretty-printer can do `powi`/`log10`/`round`/`floor`
+# on bare-metal `no_std` targets. `std` is forwarded back through this crate's own
+# `std` feature for downstream std builds (where it takes precedence over `libm`).
+num-traits = { version = "0.2", default-features = false, features = ["libm"] }
 culit = "0.6.0"
 op_result = "0.5.8"
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
@@ -54,8 +60,12 @@ typenum = "1"
 [features]
 default = ["std", "serde"]
 std = ["alloc", "num-traits/std"]
-alloc = []
-serde = ["alloc", "dep:serde", "dep:serde_json", "dep:syn", "dep:proc-macro2", "dep:quote"]
+alloc = ["whippyunits-core/alloc"]
+# `serde` bundles the runtime unit-string parser (`from_string!`/`from_json!`/
+# `.fmt()`), which is built on `syn`/`proc-macro2`. Those crates are NOT `no_std`,
+# so this feature necessarily pulls in `std`. The plain `Serialize`/`Deserialize`
+# impls come along with it. Keep this feature off for `no_std`/`no_alloc` builds.
+serde = ["std", "dep:serde", "dep:serde_json", "dep:syn", "dep:proc-macro2", "dep:quote", "whippyunits-core/parsing"]
 
 [lib]
 name = "whippyunits"

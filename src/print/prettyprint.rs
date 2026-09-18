@@ -7,6 +7,13 @@ use whippyunits_core::{
     dimension_exponents::DynDimensionExponents, scale_exponents::ScaleExponents,
 };
 
+// Provides `f64::{powi, log10, round, floor, abs}` on `no_std` targets whose
+// `core` lacks the inherent methods (bare-metal), via `libm`. Where `core`
+// already supplies them the inherent methods take precedence, so this import is
+// inert — hence `allow(unused_imports)`.
+#[allow(unused_imports)]
+use num_traits::Float;
+
 /// Check if a dimension is primitive (has exactly one non-zero exponent equal to 1)
 /// Primitive dimensions are the 8 SI base quantities: Mass, Length, Time, Current, Temperature, Amount, Luminosity, Angle
 fn is_primitive_dimension(exponents: Vec<i16>) -> bool {

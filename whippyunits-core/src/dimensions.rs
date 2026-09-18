@@ -4,6 +4,22 @@ use crate::dimension_exponents::{
 use crate::prefix::SiPrefix;
 use crate::units::Unit;
 
+/// Compare `haystack` and `target` for equality while ignoring ASCII spaces in
+/// `haystack`. Used so `"Electric Potential"` matches `"ElectricPotential"`
+/// without allocating (keeps this `no_alloc`-clean).
+fn eq_ignoring_spaces(haystack: &str, target: &str) -> bool {
+    let mut target_chars = target.chars();
+    for c in haystack.chars() {
+        if c == ' ' {
+            continue;
+        }
+        if target_chars.next() != Some(c) {
+            return false;
+        }
+    }
+    target_chars.next().is_none()
+}
+
 /// A dimension and its associated units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Dimension<ExponentsType: 'static = DynDimensionExponents> {
@@ -30,7 +46,7 @@ impl Dimension {
         Self::ALL.iter().find(|dim| {
             dim.symbol == Some(name_or_symbol)
                 || dim.name == name_or_symbol
-                || dim.name.replace(' ', "") == name_or_symbol
+                || eq_ignoring_spaces(dim.name, name_or_symbol)
         })
     }
 

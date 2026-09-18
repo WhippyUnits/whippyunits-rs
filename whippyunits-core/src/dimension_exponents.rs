@@ -1,8 +1,8 @@
 use core::ops::{Add, Mul, Neg, Sub};
 
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 use alloc::string::String;
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 use alloc::string::ToString;
 
 use crate::num::N;
@@ -305,6 +305,7 @@ impl DynDimensionExponents {
     pub const ANGLE: Self = Angle::new().value_const();
 
     /// Format using dimension symbols with unicode superscript exponents (e.g. "ML²T⁻³I⁻¹").
+    #[cfg(feature = "alloc")]
     pub fn to_symbol_string(&self) -> String {
         let mut parts = String::new();
         for (d, x) in DimensionBasis::ALL.iter().zip(self.0) {

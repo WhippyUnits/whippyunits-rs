@@ -8,28 +8,37 @@
 //! This crate provides canonical dimension data that is shared between
 //! the main whippyunits library and the proc macro crate without circular dependencies.
 
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 extern crate alloc;
 
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 use alloc::format;
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 use alloc::string::String;
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "alloc"))]
 use alloc::string::ToString;
 
 pub mod dimension_exponents;
 mod dimensions;
 pub mod num;
+// The `parser` module depends on `syn`/`proc-macro2`, which are not `no_std`.
+// It is only needed for runtime unit-string parsing, so it is feature-gated to
+// keep the default library path `no_std`/`no_alloc`.
+#[cfg(feature = "parsing")]
 pub mod parser;
 mod prefix;
 pub mod scale_exponents;
+// `storage_unit` builds human-readable unit names as `String`s, so it requires
+// `alloc`.
+#[cfg(feature = "alloc")]
 pub mod storage_unit;
 mod units;
 
 pub use dimensions::*;
+#[cfg(feature = "parsing")]
 pub use parser::*;
 pub use prefix::*;
+#[cfg(feature = "alloc")]
 pub use storage_unit::*;
 pub use units::*;
 
@@ -48,6 +57,7 @@ impl core::fmt::Display for CapitalizedFmt<'_> {
 }
 
 /// Convert a singular unit name to its plural form.
+#[cfg(feature = "alloc")]
 pub fn make_plural(singular: &str) -> String {
     // Handle exceptions to the "add s" rule
     match singular {
@@ -95,6 +105,7 @@ pub fn make_plural(singular: &str) -> String {
 /// # Returns
 ///
 /// The full trait name as a String
+#[cfg(feature = "alloc")]
 pub fn generate_declarator_trait_name(
     system: System,
     dimension_name: &str,
@@ -133,6 +144,7 @@ pub fn generate_declarator_trait_name(
 /// Convert any integer to Unicode superscript notation
 /// Returns empty string for unity exponent (1) unless show_unity is true
 /// Returns "ˀ" for unknown values (i16::MIN)
+#[cfg(feature = "alloc")]
 pub fn to_unicode_superscript(num: i16, show_unity: bool) -> String {
     if num == i16::MIN {
         return "ˀ".to_string();

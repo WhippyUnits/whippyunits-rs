@@ -7,12 +7,36 @@ license.workspace = true
 repository.workspace = true
 description = "Core types and utilities for whippyunits"
 keywords = ["units", "measurement", "dimensional", "type-safety"]
-categories = ["science", "no-std"]
+categories = ["science", "no-std::no-alloc"]
 
 [dependencies]
-syn = { version = "2.0", features = ["full"] }
-proc-macro2 = "1.0"
+# `syn`/`proc-macro2` are only needed by the runtime unit-expression parser
+# (the `parser` module). They are NOT `no_std`, so they are gated behind the
+# `parsing` feature to keep the default library path `no_std`/`no_alloc` clean.
+syn = { version = "2.0", features = ["full"], optional = true }
+proc-macro2 = { version = "1.0", optional = true }
 typenum = "1"
+# `num-traits` (with `libm`) provides the `Float` trait so the human-readable
+# unit-name/formatting helpers can do `powi`/`log10`/`round`/`floor` on targets
+# whose `core` lacks the inherent float methods (bare-metal `no_std`). On hosts
+# that do provide the inherent methods, those win and this import is inert.
+# Only needed by the `alloc` string-formatting code, so it is gated there.
+num-traits = { version = "0.2", default-features = false, features = ["libm"], optional = true }
+
+[features]
+# `parsing` is on by default so the proc-macro crate, linters, and tooling keep
+# working out of the box. Downstream `no_std` consumers depend on this crate with
+# `default-features = false` and only re-enable the features they need (e.g.
+# whippyunits' `serde` feature turns on `parsing`, and its `alloc` feature turns
+# on `alloc`).
+default = ["parsing"]
+# `alloc` gates every part of the crate that allocates (unit-name generation,
+# `Display`-style string builders). Without it, the crate is `no_std` + `no_alloc`
+# and only exposes the const/type-level dimensional machinery.
+alloc = ["dep:num-traits"]
+# The runtime unit-expression parser depends on `syn`/`proc-macro2` (not `no_std`)
+# and allocates, so it implies `alloc`.
+parsing = ["alloc", "dep:syn", "dep:proc-macro2"]
 
 [[bin]]
 name = "symbol_linter"

@@ -1,0 +1,117 @@
+name: Release Potemkin plugin VSIX
+
+# Cross-compiles the (native) whippyunits Potemkin plugin for every supported
+# platform, bundles each binary into a platform-specific companion VSIX, and
+# uploads them. On a version tag it attaches the VSIXs to a GitHub Release.
+#
+# This crate bridges two repos: it depends on the sibling `potemkin` repo via
+# `../../potemkin`, so both are checked out side-by-side (whippyunits/ + potemkin/)
+# to make that relative path resolve. If `potemkin` is private, provide a PAT in
+# the POTEMKIN_CHECKOUT_TOKEN secret.
+
+on:
+  push:
+    tags: ["potemkin-plugin-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Where to fetch the sibling potemkin repo from (crate path dependency).
+  POTEMKIN_REPO: potemkin-lsp/potemkin
+  POTEMKIN_REF: main
+
+jobs:
+  package:
+    name: ${{ matrix.vscode_target }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14, vscode_target: darwin-arm64, rust_target: aarch64-apple-darwin }
+          - { os: macos-14, vscode_target: darwin-x64, rust_target: x86_64-apple-darwin }
+          - { os: ubuntu-22.04, vscode_target: linux-x64, rust_target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-22.04, vscode_target: linux-arm64, rust_target: aarch64-unknown-linux-gnu, linux_cross: true }
+          - { os: windows-latest, vscode_target: win32-x64, rust_target: x86_64-pc-windows-msvc }
+          - { os: windows-latest, vscode_target: win32-arm64, rust_target: aarch64-pc-windows-msvc, experimental: true }
+
+    steps:
+      - name: Checkout whippyunits
+        uses: actions/checkout@v4
+        with:
+          path: whippyunits
+
+      - name: Checkout potemkin (sibling crate dependency)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.POTEMKIN_REPO }}
+          ref: ${{ env.POTEMKIN_REF }}
+          token: ${{ secrets.POTEMKIN_CHECKOUT_TOKEN || github.token }}
+          path: potemkin
+
+      # The plugin build uses whippyunits' pinned toolchain (rust-toolchain.toml,
+      # currently stable 1.90.0), auto-selected by rustup from the whippyunits
+      # tree. Add the cross target to *that* toolchain rather than installing a
+      # separate one, so the pinned toolchain actually has the target.
+      - name: Add Rust target to the pinned toolchain
+        working-directory: whippyunits/potemkin-plugin
+        run: rustup target add ${{ matrix.rust_target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: whippyunits/potemkin-plugin
+          key: ${{ matrix.rust_target }}
+
+      - name: Set up aarch64 Linux cross linker
+        if: matrix.linux_cross
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+
+      - name: Stage plugin binary
+        shell: bash
+        env:
+          VSCODE_TARGET: ${{ matrix.vscode_target }}
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: bash whippyunits/potemkin-plugin/vscode/scripts/stage-binary.sh
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install extension deps
+        working-directory: whippyunits/potemkin-plugin/vscode
+        run: npm ci
+
+      - name: Package VSIX
+        working-directory: whippyunits/potemkin-plugin/vscode
+        shell: bash
+        run: |
+          npm run package -- --target "${{ matrix.vscode_target }}" \
+            -o "whippyunits-potemkin-${{ matrix.vscode_target }}-${{ github.ref_name }}.vsix"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whippyunits-potemkin-${{ matrix.vscode_target }}
+          path: whippyunits/potemkin-plugin/vscode/*.vsix
+          if-no-files-found: error
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: vsix
+          merge-multiple: true
+      - name: Attach VSIXs to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: vsix/*.vsix

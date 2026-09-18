@@ -1,0 +1,55 @@
+{
+  "name": "whippyunits-potemkin",
+  "displayName": "whippyunits for Potemkin",
+  "description": "Pretty-prints whippyunits Quantity/Unit types in hovers and inlay hints, via the Potemkin LSP proxy.",
+  "version": "0.1.0",
+  "publisher": "whippyunits",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whippyunits/whippyunits"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "potemkin",
+    "potemkin-plugin",
+    "rust",
+    "whippyunits",
+    "units"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionDependencies": [
+    "potemkin-lsp.potemkin"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "whippyunits-potemkin.register",
+        "title": "whippyunits: Re-register Potemkin plugin"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18",
+    "watch": "npm run compile -- --watch",
+    "test": "npm run compile && node scripts/test-activation.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.4.0"
+  }
+}

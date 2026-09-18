@@ -99,6 +99,43 @@ jobs:
     - name: Run tests
       run: cargo test
       
+  no-std:
+    name: no_std / no_alloc Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # `x86_64-unknown-none` is a bare-metal target with no `std` and no default
+    # allocator, so any accidental `std`/`alloc` dependency fails the build.
+    - name: Install Rust nightly (bare-metal target)
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt, clippy
+        targets: x86_64-unknown-none
+
+    - name: Cache cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Build no_std + no_alloc (default features off)
+      run: cargo build -p whippyunits --no-default-features --target x86_64-unknown-none
+
+    - name: Build no_std + alloc
+      run: cargo build -p whippyunits --no-default-features --features alloc --target x86_64-unknown-none
+
+    # `--lib` only: the crate's linter binaries are std-only host tools.
+    - name: Build whippyunits-core no_std + no_alloc
+      run: cargo build -p whippyunits-core --no-default-features --lib --target x86_64-unknown-none
+
   doc:
     name: Build Documentation
     runs-on: ubuntu-latest

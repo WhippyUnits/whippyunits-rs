@@ -38,13 +38,15 @@
 //! |---------|---------|-------------|
 //! | `std`   | Yes     | Enables standard library support (implies `alloc`) |
 //! | `alloc` | Yes     | Enables `Display`/`Debug` impls on `Quantity` (requires a global allocator) |
-//! | `serde` | Yes     | Enables `Serialize`/`Deserialize` impls, `from_json!`/`from_string!` macros, and `.fmt()` (implies `alloc`) |
+//! | `serde` | Yes     | Enables `Serialize`/`Deserialize` impls, `from_json!`/`from_string!` macros, and `.fmt()`. Its runtime parser is built on `syn`/`proc-macro2`, which are not `no_std`, so this feature **implies `std`**. |
 //!
 //! ## `no_std` and `no_alloc` Support
 //!
-//! WhippyUnits is fully `no_std` and `no_alloc` compatible. All core functionality — quantity
-//! declaration, dimensional/scale safety, arithmetic, rescaling, erasure, and generic
-//! dimensions — works without the standard library or a heap allocator.
+//! With default features disabled, WhippyUnits is fully `no_std` and `no_alloc` compatible. All core
+//! functionality — quantity declaration, dimensional/scale safety, arithmetic, rescaling, erasure, and
+//! generic dimensions — works without the standard library or a heap allocator. The `serde` feature is the
+//! exception: its runtime unit-string parser depends on `syn`/`proc-macro2`, so enabling `serde` pulls in
+//! `std`.
 //!
 //! ```toml
 //! # no_std + no_alloc (stack-only, no Display/Debug)
