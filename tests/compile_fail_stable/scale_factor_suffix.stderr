@@ -1,0 +1,5 @@
+error: numeric scale factor `100rot` has a suffix; separate it from the unit: `100 * rot`
+ --> tests/compile_fail_stable/scale_factor_suffix.rs:4:24
+  |
+4 | type HundredRpm = qty!(100rot / min);
+  |                        ^^^^^^

@@ -477,7 +477,7 @@ pub fn validate_known_units(unit_expr: &UnitExpr) -> Option<TokenStream> {
     for ident in &identifiers {
         let name = ident.to_string();
 
-        if name == "dimensionless" || name == "power_of_10" {
+        if whippyunits_core::NUMERIC_FACTOR_UNITS.contains(&name.as_str()) {
             continue;
         }
 

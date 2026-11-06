@@ -1,0 +1,5 @@
+error: `7` is not on the whippyunits scale grid: a numeric scale factor must be a product of integer powers of 2, 3 and 5 (e.g. `100` = 2²·5², `60` = 2²·3·5, `0.6` = 3·5⁻¹), but this one leaves a factor of 7. Powers of π come from angle units such as `rot` or `deg`.
+ --> tests/compile_fail_stable/scale_factor_off_grid_power.rs:4:18
+  |
+4 | type Odd = unit!(7^2 * m);
+  |                  ^

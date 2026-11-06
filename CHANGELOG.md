@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.3]
+
+### Added
+
+- Numeric scale factors in unit expressions, e.g. `qty!(100 * rot / min)`,
+  `quantity!(1.0, 0.6 * m)`, `unit!(s / 1000)`, `2^3 * m`.  Integer and decimal
+  literals (including exponent form, `1e-3`) are factored exactly over 2, 3
+  and 5.
+
+### Fixed
+
+- Numeric literals other than `10` in a unit expression were silently treated
+  as `1`, so `qty!(100 * rot / min)` compiled as `rot / min`.  A factor that is
+  not an exact product of integer powers of 2, 3 and 5 (`7`, `0.33`), zero, or
+  a suffixed literal (`100u32`, `100rot`) is now a compile error spanned on the
+  literal.
+
 ## [0.3.2]
 
 ### Added

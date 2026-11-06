@@ -26,6 +26,9 @@
 ///             - `kg.m2/s2`, `kg * m2 / s^2`
 ///             - There may be at most one division expression in a unit literal expression
 ///             - All terms trailing the division symbol are considered to be in the denominator
+///         - Any of the above with numeric scale factors:
+///             - `100 * rot / min`, `0.6 * m`, `s / 1000`, `2^3 * m`
+///             - A factor must be an exact product of integer powers of 2, 3 and 5; any other factor (`7`, `0.33`) is a compile error
 /// - `storage_type`: An optional storage type for the quantity. Defaults to `f64`.
 ///
 /// ## Examples

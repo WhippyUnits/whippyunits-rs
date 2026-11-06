@@ -31,6 +31,9 @@
 //!             - `kg.m2/s2`, `kg * m2 / s^2`
 //!             - There may be at most one division expression in a unit literal expression
 //!             - All terms trailing the division symbol are considered to be in the denominator
+//!         - Any of the above with numeric scale factors:
+//!             - `100 * rot / min`, `0.6 * m`, `s / 1000`, `2^3 * m`
+//!             - A factor must be an exact product of integer powers of 2, 3 and 5; any other factor (`7`, `0.33`) is a compile error
 //!
 //! Runtime parsing of unit literal expressions leverages the same parser as the [unit!](crate::unit!) macro;
 //! using `from_string` or `from_json` means your binary will include the `syn`/`proc-macro2` crates as
@@ -738,6 +741,9 @@ pub fn calculate_conversion_factor(from_dims: &UnitDimensions, to_dims: &UnitDim
 ///                - `kg.m2/s2`, `kg * m2 / s^2`
 ///                - There may be at most one division expression in a unit literal expression
 ///                - All terms trailing the division symbol are considered to be in the denominator
+///            - Any of the above with numeric scale factors:
+///                - `100 * rot / min`, `0.6 * m`, `s / 1000`, `2^3 * m`
+///                - A factor must be an exact product of integer powers of 2, 3 and 5; any other factor (`7`, `0.33`) is a compile error
 ///  - `target_unit`: A unit literal expression
 ///  - `storage_type`: (optional) The storage type for the quantity (defaults to f64)
 ///
@@ -864,6 +870,9 @@ macro_rules! from_json {
 ///                - `kg.m2/s2`, `kg * m2 / s^2`
 ///                - There may be at most one division expression in a unit literal expression
 ///                - All terms trailing the division symbol are considered to be in the denominator
+///            - Any of the above with numeric scale factors:
+///                - `100 * rot / min`, `0.6 * m`, `s / 1000`, `2^3 * m`
+///                - A factor must be an exact product of integer powers of 2, 3 and 5; any other factor (`7`, `0.33`) is a compile error
 ///  - `target_unit`: A unit literal expression
 ///  - `storage_type`: (optional) The storage type for the quantity (defaults to f64)
 ///

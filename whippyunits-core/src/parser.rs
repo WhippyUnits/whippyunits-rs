@@ -25,6 +25,146 @@ pub struct UnitExprUnit {
     pub exponent: i16,
 }
 
+/// Placeholder unit names a numeric factor in a unit expression parses to:
+/// `dimensionless` for `1`, and `power_of_N` (with `exponent` as the power)
+/// for its factors of 2, 3 and 5.  They carry scale but no dimension.
+pub const NUMERIC_FACTOR_UNITS: [&str; 5] =
+    ["dimensionless", "power_of_2", "power_of_3", "power_of_5", "power_of_10"];
+
+impl UnitExprUnit {
+    /// Whether this is a numeric scale factor rather than a named unit.
+    pub fn is_numeric_factor(&self) -> bool {
+        let name = self.name.to_string();
+        NUMERIC_FACTOR_UNITS.contains(&name.as_str())
+    }
+
+    /// The scale of a numeric factor (`None` for named units).
+    fn numeric_scale(&self) -> Option<ScaleExponents> {
+        let power = self.exponent;
+        match self.name.to_string().as_str() {
+            "dimensionless" => Some(ScaleExponents::IDENTITY),
+            "power_of_2" => Some(ScaleExponents::_2(power)),
+            "power_of_3" => Some(ScaleExponents::_3(power)),
+            "power_of_5" => Some(ScaleExponents::_5(power)),
+            "power_of_10" => Some(ScaleExponents::_10(power)),
+            _ => None,
+        }
+    }
+}
+
+/// Parse a numeric literal in a unit expression (`100`, `60`, `0.6`, `1e-3`)
+/// into its exact factorization over 2, 3 and 5, or a compile error spanned
+/// on the literal when it has no such factorization.
+fn parse_numeric_factor(input: ParseStream) -> Result<UnitExpr> {
+    let (digits, suffix, span) = if input.peek(syn::LitFloat) {
+        let lit: syn::LitFloat = input.parse()?;
+        (lit.base10_digits().to_string(), lit.suffix().to_string(), lit.span())
+    } else {
+        let lit: LitInt = input.parse()?;
+        (lit.base10_digits().to_string(), lit.suffix().to_string(), lit.span())
+    };
+    let text = alloc_format(format_args!("{digits}{suffix}"));
+    if !suffix.is_empty() {
+        const NUMERIC_TYPES: [&str; 14] = [
+            "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128",
+            "isize", "f32", "f64",
+        ];
+        let fix = if NUMERIC_TYPES.contains(&suffix.as_str()) {
+            alloc_format(format_args!("drop the type suffix and write `{digits}`"))
+        } else {
+            alloc_format(format_args!("separate it from the unit: `{digits} * {suffix}`"))
+        };
+        return Err(syn::Error::new(
+            span,
+            alloc_format(format_args!("numeric scale factor `{text}` has a suffix; {fix}")),
+        ));
+    }
+
+    // digits = mantissa [e exponent], mantissa = int [. frac]; value = m · 10^e.
+    let (mantissa, exp10) = match digits.split_once(['e', 'E']) {
+        Some((m, e)) => (m, e.parse::<i32>().map_err(|_| too_large(span, &text))?),
+        None => (digits.as_str(), 0),
+    };
+    let (int, frac) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let mut m: u128 = alloc_format(format_args!("{int}{frac}"))
+        .parse()
+        .map_err(|_| too_large(span, &text))?;
+    let exp10 = exp10 - frac.len() as i32;
+
+    if m == 0 {
+        return Err(syn::Error::new(
+            span,
+            alloc_format(format_args!(
+                "`{text}` is not a valid scale factor: a unit's scale must be positive"
+            )),
+        ));
+    }
+    let mut powers = [0i32; 3];
+    for (power, prime) in powers.iter_mut().zip([2u128, 3, 5]) {
+        while m.is_multiple_of(prime) {
+            m /= prime;
+            *power += 1;
+        }
+    }
+    if m != 1 {
+        let value = if exp10 < 0 {
+            let numerator = mantissa.replace('.', "");
+            let numerator = numerator.trim_start_matches('0');
+            if -exp10 <= 6 {
+                alloc_format(format_args!(" (= {numerator}/1{})", "0".repeat(-exp10 as usize)))
+            } else {
+                alloc_format(format_args!(" (= {numerator}/10^{})", -exp10))
+            }
+        } else {
+            alloc_format(format_args!(""))
+        };
+        return Err(syn::Error::new(
+            span,
+            alloc_format(format_args!(
+                "`{text}`{value} is not on the whippyunits scale grid: a numeric scale factor \
+                 must be a product of integer powers of 2, 3 and 5 (e.g. `100` = 2²·5², \
+                 `60` = 2²·3·5, `0.6` = 3·5⁻¹), but this one leaves a factor of {m}. \
+                 Powers of π come from angle units such as `rot` or `deg`."
+            )),
+        ));
+    }
+    powers[0] += exp10;
+    powers[2] += exp10;
+
+    let mut expr: Option<UnitExpr> = None;
+    for (power, name) in powers.into_iter().zip(["power_of_2", "power_of_3", "power_of_5"]) {
+        if power == 0 {
+            continue;
+        }
+        let exponent = i16::try_from(power).map_err(|_| too_large(span, &text))?;
+        let factor = UnitExpr::Unit(UnitExprUnit { name: Ident::new(name, span), exponent });
+        expr = Some(match expr {
+            Some(left) => UnitExpr::Mul(Box::new(left), Box::new(factor)),
+            None => factor,
+        });
+    }
+    Ok(expr.unwrap_or_else(|| {
+        UnitExpr::Unit(UnitExprUnit { name: Ident::new("dimensionless", span), exponent: 1 })
+    }))
+}
+
+fn too_large(span: proc_macro2::Span, text: &str) -> syn::Error {
+    syn::Error::new(
+        span,
+        alloc_format(format_args!("numeric scale factor `{text}` is too large to represent")),
+    )
+}
+
+#[cfg(not(test))]
+fn alloc_format(args: core::fmt::Arguments) -> alloc::string::String {
+    alloc::fmt::format(args)
+}
+
+#[cfg(test)]
+fn alloc_format(args: core::fmt::Arguments) -> std::string::String {
+    std::fmt::format(args)
+}
+
 /// Evaluation mode for unit expressions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EvaluationMode {
@@ -126,52 +266,10 @@ impl UnitExpr {
             let content;
             syn::parenthesized!(content in input);
             content.parse()
-        } else if input.peek(syn::LitInt) {
-            // Handle numeric literals like "1" in "1 / m" or "10" in "10^4 m"
-            let lit: syn::LitInt = input.parse()?;
-            let base_value: i32 = lit.base10_parse()?;
-
-            // Check if this is followed by a caret (^) for power notation
-            if input.peek(Caret) {
-                let _caret: Caret = input.parse()?;
-                let exponent_lit: LitInt = input.parse()?;
-                let exponent: i32 = exponent_lit.base10_parse()?;
-
-                // Handle power-of-10 expressions like "10^4"
-                if base_value == 10 {
-                    // This is a power-of-10 scale factor
-                    // We need to create a special unit that represents this scale
-                    // For now, we'll create a unit with the appropriate scale factor
-                    Ok(UnitExpr::Unit(UnitExprUnit {
-                        name: syn::Ident::new("power_of_10", proc_macro2::Span::call_site()),
-                        exponent: exponent as i16,
-                    }))
-                } else {
-                    // For other bases, treat as regular power expression
-                    Ok(UnitExpr::Pow(
-                        Box::new(UnitExpr::Unit(UnitExprUnit {
-                            name: syn::Ident::new("dimensionless", proc_macro2::Span::call_site()),
-                            exponent: 1,
-                        })),
-                        exponent_lit,
-                    ))
-                }
-            } else {
-                // Regular numeric literal - check if it's a power of 10
-                if base_value == 10 {
-                    // Treat "10" as "10^1" for power-of-10 scale factors
-                    Ok(UnitExpr::Unit(UnitExprUnit {
-                        name: syn::Ident::new("power_of_10", proc_macro2::Span::call_site()),
-                        exponent: 1,
-                    }))
-                } else {
-                    // Other numeric literals - treat as dimensionless
-                    Ok(UnitExpr::Unit(UnitExprUnit {
-                        name: syn::Ident::new("dimensionless", proc_macro2::Span::call_site()),
-                        exponent: 1,
-                    }))
-                }
-            }
+        } else if input.peek(syn::LitInt) || input.peek(syn::LitFloat) {
+            // Numeric scale factors: "1" in "1 / m", "100" in "100 * rot / min"
+            // (`^` is handled by `parse_power`).
+            parse_numeric_factor(input)
         } else {
             let ident: Ident = input.parse()?;
 
@@ -220,10 +318,7 @@ impl UnitExpr {
     fn validate_strict_recursive(&self) -> Option<alloc::string::String> {
         match self {
             UnitExpr::Unit(unit) => {
-                // Skip special units
-                if unit.name == "power_of_10"
-                    || unit.name == "dimensionless"
-                {
+                if unit.is_numeric_factor() {
                     return None;
                 }
 
@@ -253,10 +348,7 @@ impl UnitExpr {
     fn validate_strict_recursive(&self) -> Option<std::string::String> {
         match self {
             UnitExpr::Unit(unit) => {
-                // Skip special units
-                if unit.name == "power_of_10"
-                    || unit.name == "dimensionless"
-                {
+                if unit.is_numeric_factor() {
                     return None;
                 }
 
@@ -294,11 +386,10 @@ impl UnitExpr {
     pub fn evaluate_with_mode(&self, mode: EvaluationMode) -> UnitEvaluationResult {
         match self {
             UnitExpr::Unit(unit) => {
-                // Handle special power-of-10 scale factors
-                if unit.name == "power_of_10" {
+                if let Some(scale_exponents) = unit.numeric_scale() {
                     return UnitEvaluationResult {
                         dimension_exponents: DynDimensionExponents::ZERO,
-                        scale_exponents: ScaleExponents::_10(unit.exponent),
+                        scale_exponents,
                     };
                 }
 
@@ -414,8 +505,7 @@ pub fn calculate_unit_conversion_factors(expr: &UnitExpr) -> (f64, f64) {
 fn calculate_conversion_factors_recursive(expr: &UnitExpr) -> (f64, f64) {
     match expr {
         UnitExpr::Unit(unit) => {
-            // Skip special units
-            if unit.name == "power_of_10" || unit.name == "dimensionless" {
+            if unit.is_numeric_factor() {
                 return (1.0, 0.0);
             }
 

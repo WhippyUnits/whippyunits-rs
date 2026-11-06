@@ -1,0 +1,5 @@
+error: `0.33` (= 33/100) is not on the whippyunits scale grid: a numeric scale factor must be a product of integer powers of 2, 3 and 5 (e.g. `100` = 2²·5², `60` = 2²·3·5, `0.6` = 3·5⁻¹), but this one leaves a factor of 11. Powers of π come from angle units such as `rot` or `deg`.
+ --> tests/compile_fail_stable/scale_factor_off_grid_decimal.rs:5:29
+  |
+5 |     let _x = quantity!(1.0, 0.33 * V);
+  |                             ^^^^
