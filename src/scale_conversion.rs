@@ -229,9 +229,9 @@ macro_rules! _define_int_rescale {
         > (
             quantity: $($int_rescale_input_type)*,
         ) -> $($int_rescale_output_type)* {
-            let (num, den) = aggregate_scale_factor(
+            let (num, den) = const { aggregate_scale_factor(
                 $($int_rescale_aggregate_args)*
-            );
+            ) };
             let num = num as $T;
             let den = den as $T;
 

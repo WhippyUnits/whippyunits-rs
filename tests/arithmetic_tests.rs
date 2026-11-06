@@ -634,3 +634,19 @@ fn test_prefixed_aggregate_quantities() {
     let kilowatt_hour: qty!(kWh) = quantity!(1.0, kW * h);
     assert_eq!(value!(kilowatt_hour, kW * h), 1.0);
 }
+
+#[test]
+fn test_float_ops() {
+    let a = quantity!(-3.0, m / s, f32);
+    let b = quantity!(2.0, m / s, f32);
+    assert_eq!(value!(a.abs(), m / s, f32), 3.0);
+    assert_eq!(value!(a.min(b), m / s, f32), -3.0);
+    assert_eq!(value!(a.max(b), m / s, f32), 2.0);
+    assert_eq!(value!(quantity!(5.0, m / s, f32).clamp(a, b), m / s, f32), 2.0);
+    assert_eq!(value!(a.clamp(a, b), m / s, f32), -3.0);
+    let r: qty!(m / s) = quantity!(16.0, m ^ 2 / s ^ 2).sqrt();
+    assert_eq!(value!(r, m / s), 4.0);
+    let zero: qty!(V, f32) = Default::default();
+    assert_eq!(value!(zero, V, f32), 0.0);
+    assert!(b.is_finite());
+}

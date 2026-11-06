@@ -501,6 +501,86 @@ impl<U, T, Brand> Quantity<U, T, Brand> {
     }
 }
 
+impl<U, T: Default, Brand> Default for Quantity<U, T, Brand> {
+    /// The zero quantity (the storage type's default).
+    fn default() -> Self {
+        Self {
+            unsafe_value: T::default(),
+            _phantom: core::marker::PhantomData,
+        }
+    }
+}
+
+// Unit-preserving float operations.  Each acts on the stored value at the
+// quantity's own scale, which is correct for these operations because none
+// of them depends on the scale: `|x|`, `min`, `max` and `clamp` commute with
+// a positive rescale, and `sqrt` maps the unit to its type-level square root
+// (whose scale is the root of the input's).
+macro_rules! define_float_ops {
+    ($T:ty, $sqrt:path) => {
+        impl<U, Brand> Quantity<U, $T, Brand> {
+            /// The absolute value, in the same unit.
+            #[inline]
+            pub fn abs(self) -> Self {
+                Self {
+                    unsafe_value: <$T>::abs(self.unsafe_value),
+                    _phantom: core::marker::PhantomData,
+                }
+            }
+
+            /// The smaller of two same-unit quantities; `other` on a tie or
+            /// when either is NaN.
+            #[inline]
+            pub fn min(self, other: Self) -> Self {
+                if self.unsafe_value < other.unsafe_value { self } else { other }
+            }
+
+            /// The larger of two same-unit quantities; `other` on a tie or
+            /// when either is NaN.
+            #[inline]
+            pub fn max(self, other: Self) -> Self {
+                if self.unsafe_value > other.unsafe_value { self } else { other }
+            }
+
+            /// Restrict to `[lo, hi]`.  Unlike `f32::clamp` this never panics:
+            /// with `lo > hi` it returns `lo` below `lo` and `hi` above `hi`,
+            /// and a NaN passes through unchanged.
+            #[inline]
+            pub fn clamp(self, lo: Self, hi: Self) -> Self {
+                if self.unsafe_value < lo.unsafe_value {
+                    lo
+                } else if self.unsafe_value > hi.unsafe_value {
+                    hi
+                } else {
+                    self
+                }
+            }
+
+            /// Whether the value is neither infinite nor NaN.
+            #[inline]
+            pub fn is_finite(self) -> bool {
+                self.unsafe_value.is_finite()
+            }
+
+            /// The square root, in the unit whose square is this one.  Only
+            /// defined for perfect-square units (see [`UnitSqrt`](crate::UnitSqrt)).
+            #[inline]
+            pub fn sqrt(self) -> Quantity<crate::SqrtUnit<U>, $T, Brand>
+            where
+                U: crate::UnitSqrt,
+            {
+                Quantity {
+                    unsafe_value: $sqrt(self.unsafe_value),
+                    _phantom: core::marker::PhantomData,
+                }
+            }
+        }
+    };
+}
+
+define_float_ops!(f32, libm::sqrtf);
+define_float_ops!(f64, libm::sqrt);
+
 impl<P2, P3, P5, PI> Clone for Scale<P2, P3, P5, PI> {
     fn clone(&self) -> Self {
         Self {
