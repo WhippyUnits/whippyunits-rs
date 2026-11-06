@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.2]
+
+### Added
+
+- `Default` for `Quantity` (zero of the storage type).
+- Inherent float methods on `f32`/`f64` quantities: `abs`, `min`, `max`,
+  `clamp`, `is_finite`, and `sqrt` (returning the square-root unit; uses `libm`
+  under `no_std`).
+
+### Fixed
+
+- Integer `rescale_*` functions now compute their scale factor at compile time.
+  Previously it was evaluated at runtime, leaving a real division (and its
+  divide-by-zero panic path) in optimized builds.
+
 ## [0.3.0]
 
 ### Added
