@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.5]
+
+### Fixed
+
+- Float rescales (`rescale`, `rescale_f32`, `rescale_f64`) evaluate their
+  scale factor in a `const` block, as the integer rescales already did, so
+  a runtime rescale is a single multiply at every optimization level rather
+  than a call into the factor computation.
+
 ## [0.3.4]
 
 ### Added
