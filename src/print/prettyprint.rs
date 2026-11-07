@@ -358,8 +358,7 @@ pub fn generate_prefixed_systematic_unit(
                         let base_unit_name =
                             whippyunits_core::Dimension::find_unit_by_name(base_unit)
                                 .map(|(_unit, _dimension)| {
-                                    // Use the first unit in the dimension (declaration order)
-                                    let base_unit_info = _dimension.units.first().unwrap();
+                                    let base_unit_info = _dimension.base_unit().unwrap_or(_unit);
                                     let full_name = if long_name {
                                         base_unit_info.name.to_string()
                                     } else {

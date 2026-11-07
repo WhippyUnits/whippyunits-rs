@@ -53,11 +53,10 @@ fn get_all_available_units() -> Vec<String> {
         }
     }
 
-    // Add prefixed units ONLY for base units (first unit in each dimension)
+    // Add prefixed units ONLY for base units
     for prefix in SiPrefix::ALL {
         for dimension in Dimension::ALL {
-            // Only prefix the first unit in each dimension (the base unit)
-            if let Some(base_unit) = dimension.units.first() {
+            if let Some(base_unit) = dimension.base_unit() {
                 // Add prefixed symbols (using the first symbol)
                 if let Some(first_symbol) = base_unit.symbols.first() {
                     let prefixed_symbol = format!("{}{}", prefix.symbol(), first_symbol);

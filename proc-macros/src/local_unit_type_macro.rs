@@ -1047,7 +1047,7 @@ impl LocalQuantityMacroInput {
         // Use the existing infrastructure to find units with these dimensions
         let matching_units = get_units_by_exponents(dimensions);
 
-        if let Some((_dimension, unit)) = matching_units.first() {
+        if let Some(unit) = matching_units.first().and_then(|(dimension, _)| dimension.base_unit()) {
             // Get the primary symbol for this unit
             let base_unit_symbol = unit.symbols.first()?;
 

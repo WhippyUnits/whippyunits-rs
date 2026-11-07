@@ -1000,8 +1000,8 @@ impl<
                 return unit.symbols[0]; // Return &'static str directly
             }
 
-            // If no exact match, try to find any unit in this dimension
-            if let Some(unit) = dimension.units.first() {
+            // If no exact match, fall back to the dimension's base unit
+            if let Some(unit) = dimension.base_unit() {
                 return unit.symbols[0]; // Return &'static str directly
             }
         }

@@ -114,8 +114,11 @@ pub fn get_declarator_type_for_unit(unit_name: &str) -> Option<TokenStream> {
         }
     }
 
-    // Check if it's a unit literal (like min, h, hr, d, etc.)
-    if let Some((_dimension, unit)) = lookup_unit_literal_direct(unit_name) {
+    // Check if it's a unit literal (like min, h, hr, d, etc.).  Non-storage
+    // units (ft, gn) have no declarator type of their own.
+    if let Some((_dimension, unit)) =
+        lookup_unit_literal_direct(unit_name).filter(|(_, unit)| unit.conversion_factor == 1.0)
+    {
         let type_name = whippyunits_core::CapitalizedFmt(unit.name).to_string();
         let type_ident = syn::Ident::new(&type_name, proc_macro2::Span::call_site());
         return Some(quote::quote! {
@@ -149,13 +152,13 @@ pub fn get_declarator_type_for_exponents(
 
     // Look for a unit in this dimension that matches the scale exponents
     // We need to find a unit that has the same scale exponents
+    let base_unit = matching_dimension.base_unit()?;
     for unit in matching_dimension.units {
-        if unit.scale == scale_exponents {
+        if unit.scale == scale_exponents && unit.conversion_factor == 1.0 {
             // Found a matching unit - generate type name using same logic as default declarators
             let type_name = if unit.system == System::Metric {
                 // For metric units, use the same logic as generate_default_declarators_macro
-                // Check if this is a base unit (first unit in the dimension)
-                let is_base_unit = matching_dimension.units[0].name == unit.name;
+                let is_base_unit = base_unit.name == unit.name;
 
                 if is_base_unit {
                     // For base units, use the singular name for type generation
@@ -181,9 +184,6 @@ pub fn get_declarator_type_for_exponents(
     for unit in matching_dimension.units {
         if unit.system == System::Metric {
             // Check if this could be a prefixed version of the base unit
-            // The base unit is the first unit in the dimension
-            let base_unit = &matching_dimension.units[0];
-
             // Check if the scale difference corresponds to a known prefix
             let scale_diff = scale_exponents.0[0] - base_unit.scale.0[0]; // Check p2 difference
             if let Some(prefix) = SiPrefix::ALL

@@ -649,6 +649,21 @@ impl Unit<crate::dimension_exponents!([0, 0, -1, 0, 0, 0, 0, 0])> {
     };
 }
 
+/// Acceleration
+impl Unit<crate::dimension_exponents!([0, 1, -2, 0, 0, 0, 0, 0])> {
+    /// Standard gravity g₀ = 9.80665 m·s⁻² (exact, by definition), the unit
+    /// accelerometers report in.  Symbol `g_n` (BIPM's gₙ): `g` is the gram, and a trailing digit (`g0`) reads as an exponent.
+    pub const STANDARD_GRAVITY: Self = Self {
+        name: "standard_gravity",
+        symbols: &["g_n"],
+        scale: ScaleExponents::_10(1),
+        conversion_factor: 0.980665,
+        affine_offset: NONE,
+        exponents: TypeDimensionExponents::new(),
+        system: System::Metric,
+    };
+}
+
 /// Force
 impl Unit<crate::dimension_exponents!([1, 1, -2, 0, 0, 0, 0, 0])> {
     pub const NEWTON: Self = Self {

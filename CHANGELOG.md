@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.4]
+
+### Added
+
+- Standard gravity, `g_n` (`standard_gravity`, 9.80665 m·s⁻²), the first
+  unit of a new Acceleration dimension.  It is a non-storage unit, stored as
+  0.980665 × 10 m·s⁻² and printed as such (`da(m·s⁻²)`, as `ft` prints as
+  `dm`): `quantity!(1.0, g_n)`, `value!(a, g_n)`, `1.0.standard_gravity()`.
+- `Dimension::base_unit`: a dimension's first storage unit, the one that
+  takes SI prefixes.
+
+### Fixed
+
+- Code generation and printing no longer assume a dimension's first listed
+  unit is a storage unit, so a dimension may list only non-storage units
+  without its stored quantities being printed in (or declared as) that
+  non-storage unit.
+
 ## [0.3.3]
 
 ### Added

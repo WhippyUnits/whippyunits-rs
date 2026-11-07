@@ -341,7 +341,9 @@ impl DefaultDeclaratorsInput {
                 continue;
             }
 
-            let is_base_unit = i == 0; // First unit is the base unit
+            // The first unit is the base unit, unless it is a non-storage unit
+            // (a dimension, like Acceleration, with no metric storage unit).
+            let is_base_unit = i == 0 && dimension.base_unit().is_some_and(|base| base.name == unit.name);
 
             if is_base_unit {
                 // Generate base unit with all SI prefixes

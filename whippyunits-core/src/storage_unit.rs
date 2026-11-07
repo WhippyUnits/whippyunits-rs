@@ -475,7 +475,7 @@ pub fn lookup_dimension_name(exponents: Vec<i16>) -> Option<DimensionNames> {
             .units
             .iter()
             .find(|unit| unit.scale == ScaleExponents::IDENTITY && unit.conversion_factor == 1.0)
-            .or_else(|| dim_info.units.first()); // Fall back to first unit if no exact match
+            .or_else(|| dim_info.base_unit()); // Fall back to the base unit, if any
 
         let unit_symbol = preferred_unit.and_then(|unit| unit.symbols.first().copied());
         let unit_long_name = preferred_unit.map(|unit| unit.name);

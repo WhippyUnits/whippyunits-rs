@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.2"
+version = "0.3.3"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -18,7 +18,7 @@ repository = "https://github.com/WhippyUnits/whippyunits-rs"
 
 [package]
 name = "whippyunits"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2024"
 authors = ["Oblarg"]
 license = "MIT OR Apache-2.0"
@@ -34,12 +34,12 @@ proc-macro2 = { version = "1.0", optional = true }
 syn = { version = "2.0", features = ["full"], optional = true }
 libm = "0.2"
 bytemuck = "1"
-whippyunits-proc-macros = { path = "proc-macros", version = "0.3.1" }
+whippyunits-proc-macros = { path = "proc-macros", version = "0.3.2" }
 # `default-features = false` drops whippyunits-core's `parsing` feature (which
 # pulls in the non-`no_std` `syn`/`proc-macro2`). It is re-enabled through this
 # crate's own `serde` feature, which is the only path that parses unit strings
-# at runtime. Requires >= 0.3.2, where numeric scale factors were added.
-whippyunits-core = { path = "whippyunits-core", version = "0.3.2", default-features = false }
+# at runtime. Requires >= 0.3.3, for `Dimension::base_unit`.
+whippyunits-core = { path = "whippyunits-core", version = "0.3.3", default-features = false }
 # `default-features = false` drops num-traits' `std` (on by default), which would
 # otherwise be unified onto every downstream no_std build. `NumCast` (a core-only
 # trait) is always used; the `libm` feature additionally supplies the `Float`

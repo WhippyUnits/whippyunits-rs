@@ -75,6 +75,7 @@ pub fn make_plural(singular: &str) -> String {
         "bar" => "bar".to_string(),
         "celsius" => "celsius".to_string(),
         "kelvin" => "kelvin".to_string(),
+        "standard_gravity" => "standard_gravity".to_string(),
         _ => {
             // Default: just add 's' (works for 99% of unit names)
             format!("{}s", singular)

@@ -37,6 +37,18 @@ pub struct Dimension<ExponentsType: 'static = DynDimensionExponents> {
     units_erased: &'static [Unit],
 }
 
+impl<ExponentsType> Dimension<ExponentsType> {
+    /// The dimension's base unit: its first storage unit (conversion factor
+    /// 1, no affine offset), which takes the SI prefixes.  `None` for a
+    /// dimension whose listed units are all non-storage, like Acceleration
+    /// (standard gravity only); its quantities print systematically (m·s⁻²).
+    pub fn base_unit(&self) -> Option<&'static Unit<ExponentsType>> {
+        self.units
+            .iter()
+            .find(|unit| unit.conversion_factor == 1.0 && unit.affine_offset == 0.0)
+    }
+}
+
 impl Dimension {
     /// Find a dimension by its name or symbol.
     ///
@@ -230,7 +242,7 @@ impl Dimension {
         Dimension::ANGLE.erase(),
     ];
 
-    const ALL_FIXED: [Self; 28] = [
+    const ALL_FIXED: [Self; 29] = [
         Dimension::MASS.erase(),
         Dimension::LENGTH.erase(),
         Dimension::TIME.erase(),
@@ -242,6 +254,7 @@ impl Dimension {
         Dimension::AREA.erase(),
         Dimension::VOLUME.erase(),
         Dimension::FREQUENCY.erase(),
+        Dimension::ACCELERATION.erase(),
         Dimension::FORCE.erase(),
         Dimension::ENERGY.erase(),
         Dimension::POWER.erase(),
@@ -436,6 +449,13 @@ impl Dimension<crate::dimension_exponents!([0, 0, -1, 0, 0, 0, 0, 0])> {
     pub const FREQUENCY: Self = __dim!(Self {
         name: "Frequency",
         units: &[Unit::HERTZ],
+    });
+}
+
+impl Dimension<crate::dimension_exponents!([0, 1, -2, 0, 0, 0, 0, 0])> {
+    pub const ACCELERATION: Self = __dim!(Self {
+        name: "Acceleration",
+        units: &[Unit::STANDARD_GRAVITY],
     });
 }
 
